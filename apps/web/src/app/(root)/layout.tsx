@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import { LegacyProviders } from "~/app/_components/legacy-providers"
 import { siteConfig } from "~/site-config"
 import type { LayoutProps } from "~/utils/types"
 import { Navbar } from "./_components/navbar/navbar"
@@ -11,12 +12,14 @@ export default async function Layout({ children }: LayoutProps) {
     cookieStore.get(siteConfig.sidebar.cookie.name)?.value !== "false"
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <Sidebar />
-      <div className="w-full transition-[max-width] duration-300 md:max-w-[calc(100%-var(--sidebar-width))]">
-        <Navbar />
-        {children}
-      </div>
-    </SidebarProvider>
+    <LegacyProviders>
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <Sidebar />
+        <div className="w-full transition-[max-width] duration-300 md:max-w-[calc(100%-var(--sidebar-width))]">
+          <Navbar />
+          {children}
+        </div>
+      </SidebarProvider>
+    </LegacyProviders>
   )
 }

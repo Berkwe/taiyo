@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080">
+  <rect width="720" height="1080" fill="#121416"/>
+  <circle cx="360" cy="380" r="240" fill="none" stroke="#5A83A6" stroke-width="30" stroke-dasharray="580 210"/>
+  <circle cx="360" cy="380" r="110" fill="#212428"/>
+  <text x="58" y="850" fill="#EFF1F2" font-family="sans-serif" font-size="70" font-weight="700">KIRIK</text>
+  <text x="58" y="925" fill="#EFF1F2" font-family="sans-serif" font-size="70" font-weight="700">YÖRÜNGE</text>
+</svg>

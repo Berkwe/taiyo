@@ -1,4 +1,34 @@
-# Taiyō
+# NovoraScans
+
+NovoraScans is a multilingual webtoon, manga, manhwa, manhua, comic, and future
+light-novel reading platform built on Taiyō. Its core domain supports multiple
+translation quality editions under the same language: AI Ultra, AI Standard,
+human-reviewed, official, and community releases.
+
+The current foundation includes fictional local demo content, Turkish and
+English public routes, a vertical reader, semantic light/dark/system themes,
+technical SEO, and an additive Prisma release model.
+
+## Quick start
+
+Use Node 24.11.1 and Docker:
+
+```bash
+cp .env.example .env
+corepack enable
+corepack pnpm install
+docker compose up -d
+corepack pnpm --filter @taiyomoe/db db migrate deploy
+corepack pnpm --filter @taiyomoe/db seed
+corepack pnpm dev
+```
+
+See [local development](docs/LOCAL_DEVELOPMENT.md),
+[architecture](docs/ARCHITECTURE.md), and
+[implementation status](docs/IMPLEMENTATION_STATUS.md). Legal placeholder text
+is operational scaffolding and is not legal advice.
+
+## Upstream foundation
 
 ![Taiyō's banner](https://cdn.taiyo.moe/assets/banner-red.png)
 

@@ -1,0 +1,372 @@
+import type {
+  Chapter,
+  ChapterRelease,
+  Locale,
+  Series,
+  TranslationProfile,
+} from "./domain"
+
+export const translationProfiles: TranslationProfile[] = [
+  {
+    id: "profile-ai-ultra",
+    slug: "ai-ultra",
+    labels: { tr: "AI Ultra", en: "AI Ultra" },
+    descriptions: {
+      tr: "Bağlam, terim sözlüğü ve karakter hafızasıyla insan kontrolünden geçen üst kalite.",
+      en: "Premium AI translation with context, glossary, character memory and human review.",
+    },
+    sortOrder: 10,
+    isAiGenerated: true,
+    isHumanReviewed: true,
+  },
+  {
+    id: "profile-ai-standard",
+    slug: "ai-standart",
+    labels: { tr: "AI Standart", en: "AI Standard" },
+    descriptions: {
+      tr: "Hızlı yayın için otomatik kalite kontrollerinden geçen dengeli çeviri.",
+      en: "Balanced translation with automated quality checks for faster releases.",
+    },
+    sortOrder: 20,
+    isAiGenerated: true,
+    isHumanReviewed: false,
+  },
+  {
+    id: "profile-community",
+    slug: "topluluk",
+    labels: { tr: "Topluluk", en: "Community" },
+    descriptions: {
+      tr: "Topluluk çevirmenleri ve editörleri tarafından hazırlanan sürüm.",
+      en: "A release prepared by community translators and editors.",
+    },
+    sortOrder: 30,
+    isAiGenerated: false,
+    isHumanReviewed: true,
+  },
+  {
+    id: "profile-official",
+    slug: "official",
+    labels: { tr: "Resmî", en: "Official" },
+    descriptions: {
+      tr: "Hak sahibi veya lisanslı yayın ortağı tarafından sağlanan sürüm.",
+      en: "A release supplied by the rights holder or licensed publishing partner.",
+    },
+    sortOrder: 5,
+    isAiGenerated: false,
+    isHumanReviewed: true,
+  },
+]
+
+const pages = (label: string) =>
+  [1, 2, 3, 4].map((pageNumber) => ({
+    pageNumber,
+    src: `/demo/reader/page-${pageNumber}.svg`,
+    width: 1200,
+    height: 1800,
+    alt: `${label}, sayfa ${pageNumber}`,
+  }))
+
+const release = (
+  id: string,
+  profileId: string,
+  targetLanguage: Locale,
+  score: number,
+  canonical = false,
+): ChapterRelease => ({
+  id,
+  targetLanguage,
+  sourceLanguage: "ko",
+  profileId,
+  revision: 1,
+  releaseGroup: targetLanguage === "tr" ? "Novora Studio" : "Northstar Press",
+  publishedAt: "2026-07-20T10:00:00.000Z",
+  humanReviewed: profileId !== "profile-ai-standard",
+  glossaryUsed: profileId.includes("ai"),
+  characterMemoryUsed: profileId === "profile-ai-ultra",
+  overallQualityScore: score,
+  isCanonicalForLanguage: canonical,
+  isIndexable: true,
+  pages: pages(id),
+})
+
+const chapters = (slug: string, multiProfile = false): Chapter[] =>
+  [1, 2, 3].map((chapterNumber) => {
+    const base = [
+      release(
+        `${slug}-ch${chapterNumber}-ultra-tr`,
+        "profile-ai-ultra",
+        "tr",
+        96,
+        true,
+      ),
+      release(
+        `${slug}-ch${chapterNumber}-standard-en`,
+        "profile-ai-standard",
+        "en",
+        88,
+        true,
+      ),
+    ]
+    if (multiProfile) {
+      base.splice(
+        1,
+        0,
+        release(
+          `${slug}-ch${chapterNumber}-standard-tr`,
+          "profile-ai-standard",
+          "tr",
+          87,
+        ),
+        release(
+          `${slug}-ch${chapterNumber}-community-tr`,
+          "profile-community",
+          "tr",
+          91,
+        ),
+      )
+    }
+    return {
+      id: `${slug}-chapter-${chapterNumber}`,
+      number: String(chapterNumber),
+      sortKey: chapterNumber,
+      canonicalSlug: `bolum-${chapterNumber}`,
+      localizations: {
+        tr: {
+          title:
+            chapterNumber === 1
+              ? "İlk Kıvılcım"
+              : `Yol Ayrımı ${chapterNumber}`,
+          description: `Hikâyenin ${chapterNumber}. bölümünde yeni sırlar ortaya çıkıyor.`,
+        },
+        en: {
+          title:
+            chapterNumber === 1
+              ? "The First Spark"
+              : `Crossroads ${chapterNumber}`,
+          description: `New secrets surface in chapter ${chapterNumber}.`,
+        },
+      },
+      publishedAt: `2026-07-${String(21 - chapterNumber).padStart(2, "0")}T10:00:00.000Z`,
+      releases: base,
+    }
+  })
+
+const makeSeries = (
+  input: Omit<
+    Series,
+    "chapters" | "isSearchable" | "isIndexable" | "contentRating"
+  > & {
+    multiProfile?: boolean
+  },
+): Series => ({
+  ...input,
+  contentRating: "TEEN",
+  isSearchable: true,
+  isIndexable: true,
+  chapters: chapters(input.slug, input.multiProfile),
+})
+
+export const seriesFixtures: Series[] = [
+  makeSeries({
+    id: "series-echoes",
+    slug: "gece-ekolari",
+    originalLanguage: "ko",
+    type: "WEBTOON",
+    status: "ONGOING",
+    publicationYear: 2026,
+    updatedAt: "2026-07-22T16:00:00.000Z",
+    publishedAt: "2026-04-10T10:00:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: true,
+    popularity: 98,
+    localizations: {
+      tr: {
+        title: "Gece Ekoları",
+        shortTitle: "Ekolar",
+        description:
+          "Seslerin anıya dönüştüğü kıyı kentinde bir arşivci, kayıp kardeşinin yankısını izler.",
+      },
+      en: {
+        title: "Echoes After Midnight",
+        shortTitle: "Echoes",
+        description:
+          "In a coastal city where sound becomes memory, an archivist follows the echo of her missing brother.",
+      },
+    },
+    aliases: ["Midnight Echoes", "Bamui Ullim"],
+    creators: [
+      { name: "Derya K.", role: "Yazar" },
+      { name: "Mina Park", role: "Çizer" },
+    ],
+    genres: ["Gizem", "Fantastik"],
+    tags: ["Şehir", "Kayıp anılar"],
+    cover: "/demo/covers/echoes.svg",
+    banner: "/demo/banner.svg",
+    multiProfile: true,
+  }),
+  makeSeries({
+    id: "series-orbit",
+    slug: "kirik-yorunge",
+    originalLanguage: "ja",
+    type: "MANGA",
+    status: "COMPLETED",
+    publicationYear: 2024,
+    updatedAt: "2026-07-19T10:00:00.000Z",
+    publishedAt: "2025-11-02T10:00:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: false,
+    popularity: 91,
+    localizations: {
+      tr: {
+        title: "Kırık Yörünge",
+        description:
+          "Emekli bir pilot, parçalanan ay istasyonundaki son kurtarma görevine çağrılır.",
+      },
+      en: {
+        title: "Fractured Orbit",
+        description:
+          "A retired pilot is called into one last rescue mission on a fractured lunar station.",
+      },
+    },
+    aliases: ["Orbit 9"],
+    creators: [{ name: "Akira Mori", role: "Yazar ve çizer" }],
+    genres: ["Bilim Kurgu", "Dram"],
+    tags: ["Uzay", "Hayatta kalma"],
+    cover: "/demo/covers/orbit.svg",
+  }),
+  makeSeries({
+    id: "series-garden",
+    slug: "cam-bahce",
+    originalLanguage: "ko",
+    type: "MANHWA",
+    status: "ONGOING",
+    publicationYear: 2025,
+    updatedAt: "2026-07-21T12:00:00.000Z",
+    publishedAt: "2026-01-14T10:00:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: true,
+    popularity: 89,
+    localizations: {
+      tr: {
+        title: "Cam Bahçe",
+        description:
+          "Bitkilerin sır sakladığı bir sarayda genç botanikçi gerçeğin izini sürer.",
+      },
+      en: {
+        title: "The Glass Garden",
+        description:
+          "A young botanist hunts for truth in a palace where plants keep secrets.",
+      },
+    },
+    aliases: ["Glasshouse"],
+    creators: [
+      { name: "Seo Yuna", role: "Yazar" },
+      { name: "Han Sol", role: "Çizer" },
+    ],
+    genres: ["Romantik", "Fantastik"],
+    tags: ["Saray", "Botanik"],
+    cover: "/demo/covers/garden.svg",
+  }),
+  makeSeries({
+    id: "series-river",
+    slug: "sessiz-nehir",
+    originalLanguage: "zh",
+    type: "MANHUA",
+    status: "HIATUS",
+    publicationYear: 2023,
+    updatedAt: "2026-07-13T08:00:00.000Z",
+    publishedAt: "2025-08-09T10:00:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: false,
+    popularity: 77,
+    localizations: {
+      tr: {
+        title: "Sessiz Nehir",
+        description:
+          "Haritalarda görünmeyen bir nehir, iki gezgini unutulmuş bir krallığa taşır.",
+      },
+      en: {
+        title: "The Silent River",
+        description:
+          "A river absent from every map carries two travellers to a forgotten kingdom.",
+      },
+    },
+    aliases: ["Wu Sheng He"],
+    creators: [{ name: "Lin Yue", role: "Yazar" }],
+    genres: ["Macera", "Fantastik"],
+    tags: ["Yolculuk", "Mitoloji"],
+    cover: "/demo/covers/river.svg",
+  }),
+  makeSeries({
+    id: "series-signal",
+    slug: "son-sinyal",
+    originalLanguage: "en",
+    type: "COMIC",
+    status: "ONGOING",
+    publicationYear: 2026,
+    updatedAt: "2026-07-20T18:00:00.000Z",
+    publishedAt: "2026-05-01T10:00:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: false,
+    popularity: 84,
+    localizations: {
+      tr: {
+        title: "Son Sinyal",
+        description:
+          "Dünyanın son radyo sunucusu, boşluktan gelen imkânsız bir cevabı duyar.",
+      },
+      en: {
+        title: "The Last Signal",
+        description:
+          "Earth's last radio host hears an impossible answer from the void.",
+      },
+    },
+    aliases: ["Signal Zero"],
+    creators: [{ name: "Iris Vale", role: "Yazar ve çizer" }],
+    genres: ["Gerilim", "Bilim Kurgu"],
+    tags: ["Radyo", "Kıyamet sonrası"],
+    cover: "/demo/covers/signal.svg",
+  }),
+  makeSeries({
+    id: "series-teahouse",
+    slug: "bulut-cayevi",
+    originalLanguage: "tr",
+    type: "LIGHT_NOVEL",
+    status: "COMPLETED",
+    publicationYear: 2025,
+    updatedAt: "2026-07-17T09:00:00.000Z",
+    publishedAt: "2025-09-18T10:00:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: false,
+    popularity: 73,
+    localizations: {
+      tr: {
+        title: "Bulut Çayevi",
+        description:
+          "Her fincanın farklı bir geleceği gösterdiği küçük bir çayevinin sıcak öyküleri.",
+      },
+      en: {
+        title: "The Cloud Teahouse",
+        description:
+          "Warm stories from a tiny teahouse where every cup reveals a different future.",
+      },
+    },
+    aliases: ["Tea Above the Clouds"],
+    creators: [{ name: "Nehir Aydın", role: "Yazar" }],
+    genres: ["Gündelik Yaşam", "Fantastik"],
+    tags: ["Rahatlatıcı", "Yemek"],
+    cover: "/demo/covers/teahouse.svg",
+  }),
+]
+
+export const getProfile = (id: string) =>
+  translationProfiles.find((profile) => profile.id === id)
+
+export const getSeries = (slug: string) =>
+  seriesFixtures.find((series) => series.slug === slug)
+
+export const getChapter = (series: Series, chapterNumber: string) =>
+  series.chapters.find((chapter) => chapter.number === chapterNumber)
+
+export const getRelease = (chapter: Chapter, releaseId: string) =>
+  chapter.releases.find((releaseItem) => releaseItem.id === releaseId)

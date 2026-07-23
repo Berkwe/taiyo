@@ -58,6 +58,120 @@ export const ChapterScalarFieldEnumSchema = z.enum(['id', 'createdAt', 'updatedA
 
 export type ChapterScalarFieldEnum = z.infer<typeof ChapterScalarFieldEnumSchema>;
 
+// File: SeriesScalarFieldEnum.schema.ts
+
+export const SeriesScalarFieldEnumSchema = z.enum(['id', 'slug', 'originalLanguage', 'type', 'status', 'contentRating', 'publicationYear', 'defaultAccentColor', 'isFeatured', 'isSearchable', 'isIndexable', 'publishedAt', 'deletedAt', 'createdAt', 'updatedAt'])
+
+export type SeriesScalarFieldEnum = z.infer<typeof SeriesScalarFieldEnumSchema>;
+
+// File: SeriesLocalizationScalarFieldEnum.schema.ts
+
+export const SeriesLocalizationScalarFieldEnumSchema = z.enum(['id', 'locale', 'title', 'shortTitle', 'description', 'seoTitleOverride', 'seoDescriptionOverride', 'createdAt', 'updatedAt', 'seriesId'])
+
+export type SeriesLocalizationScalarFieldEnum = z.infer<typeof SeriesLocalizationScalarFieldEnumSchema>;
+
+// File: SeriesAliasScalarFieldEnum.schema.ts
+
+export const SeriesAliasScalarFieldEnumSchema = z.enum(['id', 'locale', 'alias', 'normalizedAlias', 'type', 'createdAt', 'seriesId'])
+
+export type SeriesAliasScalarFieldEnum = z.infer<typeof SeriesAliasScalarFieldEnumSchema>;
+
+// File: PlatformCreatorScalarFieldEnum.schema.ts
+
+export const PlatformCreatorScalarFieldEnumSchema = z.enum(['id', 'slug', 'name', 'createdAt', 'updatedAt'])
+
+export type PlatformCreatorScalarFieldEnum = z.infer<typeof PlatformCreatorScalarFieldEnumSchema>;
+
+// File: SeriesCreatorScalarFieldEnum.schema.ts
+
+export const SeriesCreatorScalarFieldEnumSchema = z.enum(['role', 'sortOrder', 'seriesId', 'creatorId'])
+
+export type SeriesCreatorScalarFieldEnum = z.infer<typeof SeriesCreatorScalarFieldEnumSchema>;
+
+// File: GenreScalarFieldEnum.schema.ts
+
+export const GenreScalarFieldEnumSchema = z.enum(['id', 'slug', 'createdAt', 'updatedAt'])
+
+export type GenreScalarFieldEnum = z.infer<typeof GenreScalarFieldEnumSchema>;
+
+// File: GenreLocalizationScalarFieldEnum.schema.ts
+
+export const GenreLocalizationScalarFieldEnumSchema = z.enum(['locale', 'name', 'genreId'])
+
+export type GenreLocalizationScalarFieldEnum = z.infer<typeof GenreLocalizationScalarFieldEnumSchema>;
+
+// File: SeriesGenreScalarFieldEnum.schema.ts
+
+export const SeriesGenreScalarFieldEnumSchema = z.enum(['sortOrder', 'seriesId', 'genreId'])
+
+export type SeriesGenreScalarFieldEnum = z.infer<typeof SeriesGenreScalarFieldEnumSchema>;
+
+// File: PlatformTagScalarFieldEnum.schema.ts
+
+export const PlatformTagScalarFieldEnumSchema = z.enum(['id', 'slug', 'createdAt', 'updatedAt'])
+
+export type PlatformTagScalarFieldEnum = z.infer<typeof PlatformTagScalarFieldEnumSchema>;
+
+// File: TagLocalizationScalarFieldEnum.schema.ts
+
+export const TagLocalizationScalarFieldEnumSchema = z.enum(['locale', 'name', 'tagId'])
+
+export type TagLocalizationScalarFieldEnum = z.infer<typeof TagLocalizationScalarFieldEnumSchema>;
+
+// File: SeriesTagScalarFieldEnum.schema.ts
+
+export const SeriesTagScalarFieldEnumSchema = z.enum(['seriesId', 'tagId'])
+
+export type SeriesTagScalarFieldEnum = z.infer<typeof SeriesTagScalarFieldEnumSchema>;
+
+// File: PlatformChapterScalarFieldEnum.schema.ts
+
+export const PlatformChapterScalarFieldEnumSchema = z.enum(['id', 'chapterNumber', 'volumeNumber', 'sortKey', 'canonicalSlug', 'originalPublishedAt', 'createdAt', 'updatedAt', 'deletedAt', 'seriesId'])
+
+export type PlatformChapterScalarFieldEnum = z.infer<typeof PlatformChapterScalarFieldEnumSchema>;
+
+// File: ChapterLocalizationScalarFieldEnum.schema.ts
+
+export const ChapterLocalizationScalarFieldEnumSchema = z.enum(['locale', 'title', 'description', 'chapterId'])
+
+export type ChapterLocalizationScalarFieldEnum = z.infer<typeof ChapterLocalizationScalarFieldEnumSchema>;
+
+// File: TranslationProfileScalarFieldEnum.schema.ts
+
+export const TranslationProfileScalarFieldEnumSchema = z.enum(['id', 'slug', 'labelKey', 'descriptionKey', 'sortOrder', 'badgeStyle', 'isAiGenerated', 'isHumanReviewed', 'glossaryEnabled', 'characterMemoryEnabled', 'isPublic', 'isIndexable', 'createdAt', 'updatedAt'])
+
+export type TranslationProfileScalarFieldEnum = z.infer<typeof TranslationProfileScalarFieldEnumSchema>;
+
+// File: ReleaseGroupScalarFieldEnum.schema.ts
+
+export const ReleaseGroupScalarFieldEnumSchema = z.enum(['id', 'slug', 'name', 'description', 'website', 'verified', 'type', 'createdAt', 'updatedAt'])
+
+export type ReleaseGroupScalarFieldEnum = z.infer<typeof ReleaseGroupScalarFieldEnumSchema>;
+
+// File: ChapterReleaseScalarFieldEnum.schema.ts
+
+export const ChapterReleaseScalarFieldEnumSchema = z.enum(['id', 'targetLanguage', 'sourceLanguage', 'revision', 'status', 'publishedAt', 'humanReviewed', 'glossaryUsed', 'characterMemoryUsed', 'translationQualityScore', 'ocrQualityScore', 'cleanupQualityScore', 'overallQualityScore', 'internalEngineName', 'internalEngineVersion', 'pageCount', 'storagePrefix', 'isCanonicalForLanguage', 'isPublic', 'isIndexable', 'createdAt', 'updatedAt', 'chapterId', 'translationProfileId', 'releaseGroupId'])
+
+export type ChapterReleaseScalarFieldEnum = z.infer<typeof ChapterReleaseScalarFieldEnumSchema>;
+
+// File: ReleasePageScalarFieldEnum.schema.ts
+
+export const ReleasePageScalarFieldEnumSchema = z.enum(['id', 'pageNumber', 'assetUrl', 'width', 'height', 'blurData', 'mimeType', 'fileSize', 'checksum', 'createdAt', 'releaseId'])
+
+export type ReleasePageScalarFieldEnum = z.infer<typeof ReleasePageScalarFieldEnumSchema>;
+
+// File: ReadingProgressRecordScalarFieldEnum.schema.ts
+
+export const ReadingProgressRecordScalarFieldEnumSchema = z.enum(['id', 'userId', 'chapterId', 'pageNumber', 'scrollRatio', 'updatedAt', 'completedAt', 'releaseId'])
+
+export type ReadingProgressRecordScalarFieldEnum = z.infer<typeof ReadingProgressRecordScalarFieldEnumSchema>;
+
+// File: SlugRedirectScalarFieldEnum.schema.ts
+
+export const SlugRedirectScalarFieldEnumSchema = z.enum(['id', 'entityType', 'entityId', 'oldSlug', 'locale', 'createdAt'])
+
+export type SlugRedirectScalarFieldEnum = z.infer<typeof SlugRedirectScalarFieldEnumSchema>;
+
 // File: TaskScalarFieldEnum.schema.ts
 
 export const TaskScalarFieldEnumSchema = z.enum(['id', 'createdAt', 'updatedAt', 'type', 'status', 'payload', 'sessionId'])
@@ -195,6 +309,54 @@ export type Languages = z.infer<typeof LanguagesSchema>;
 export const TrackersSchema = z.enum(['MANGADEX', 'MYANIMELIST', 'ANILIST'])
 
 export type Trackers = z.infer<typeof TrackersSchema>;
+
+// File: SeriesType.schema.ts
+
+export const SeriesTypeSchema = z.enum(['WEBTOON', 'MANGA', 'MANHWA', 'MANHUA', 'COMIC', 'LIGHT_NOVEL'])
+
+export type SeriesType = z.infer<typeof SeriesTypeSchema>;
+
+// File: SeriesStatus.schema.ts
+
+export const SeriesStatusSchema = z.enum(['ONGOING', 'COMPLETED', 'HIATUS', 'ANNOUNCED', 'CANCELLED'])
+
+export type SeriesStatus = z.infer<typeof SeriesStatusSchema>;
+
+// File: PlatformContentRating.schema.ts
+
+export const PlatformContentRatingSchema = z.enum(['EVERYONE', 'TEEN', 'MATURE'])
+
+export type PlatformContentRating = z.infer<typeof PlatformContentRatingSchema>;
+
+// File: SeriesAliasType.schema.ts
+
+export const SeriesAliasTypeSchema = z.enum(['ORIGINAL', 'ROMANIZED', 'ENGLISH', 'TURKISH', 'ALTERNATIVE', 'FORMER_TITLE'])
+
+export type SeriesAliasType = z.infer<typeof SeriesAliasTypeSchema>;
+
+// File: CreatorRole.schema.ts
+
+export const CreatorRoleSchema = z.enum(['AUTHOR', 'ARTIST', 'WRITER', 'COLORIST', 'STUDIO'])
+
+export type CreatorRole = z.infer<typeof CreatorRoleSchema>;
+
+// File: ReleaseGroupType.schema.ts
+
+export const ReleaseGroupTypeSchema = z.enum(['OFFICIAL', 'INTERNAL', 'COMMUNITY', 'PARTNER'])
+
+export type ReleaseGroupType = z.infer<typeof ReleaseGroupTypeSchema>;
+
+// File: ReleaseStatus.schema.ts
+
+export const ReleaseStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'])
+
+export type ReleaseStatus = z.infer<typeof ReleaseStatusSchema>;
+
+// File: SlugEntityType.schema.ts
+
+export const SlugEntityTypeSchema = z.enum(['SERIES', 'CHAPTER', 'GENRE', 'CREATOR'])
+
+export type SlugEntityType = z.infer<typeof SlugEntityTypeSchema>;
 
 // File: TaskType.schema.ts
 
@@ -383,6 +545,302 @@ export const ChapterSchema = z.object({
 });
 
 export type ChapterType = z.infer<typeof ChapterSchema>;
+
+
+// File: Series.schema.ts
+
+export const SeriesSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  originalLanguage: LanguagesSchema,
+  type: SeriesTypeSchema,
+  status: SeriesStatusSchema,
+  contentRating: PlatformContentRatingSchema.default("TEEN"),
+  publicationYear: z.number().int().nullish(),
+  defaultAccentColor: z.string().nullish(),
+  isFeatured: z.boolean(),
+  isSearchable: z.boolean().default(true),
+  isIndexable: z.boolean().default(true),
+  publishedAt: z.date().nullish(),
+  deletedAt: z.date().nullish(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type SeriesModel = z.infer<typeof SeriesSchema>;
+
+// File: SeriesLocalization.schema.ts
+
+export const SeriesLocalizationSchema = z.object({
+  id: z.string(),
+  locale: LanguagesSchema,
+  title: z.string(),
+  shortTitle: z.string().nullish(),
+  description: z.string(),
+  seoTitleOverride: z.string().nullish(),
+  seoDescriptionOverride: z.string().nullish(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  seriesId: z.string(),
+});
+
+export type SeriesLocalizationType = z.infer<typeof SeriesLocalizationSchema>;
+
+
+// File: SeriesAlias.schema.ts
+
+export const SeriesAliasSchema = z.object({
+  id: z.string(),
+  locale: LanguagesSchema.nullish(),
+  alias: z.string(),
+  normalizedAlias: z.string(),
+  type: SeriesAliasTypeSchema.default("ALTERNATIVE"),
+  createdAt: z.date(),
+  seriesId: z.string(),
+});
+
+export type SeriesAliasModel = z.infer<typeof SeriesAliasSchema>;
+
+// File: PlatformCreator.schema.ts
+
+export const PlatformCreatorSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type PlatformCreatorType = z.infer<typeof PlatformCreatorSchema>;
+
+
+// File: SeriesCreator.schema.ts
+
+export const SeriesCreatorSchema = z.object({
+  role: CreatorRoleSchema,
+  sortOrder: z.number().int(),
+  seriesId: z.string(),
+  creatorId: z.string(),
+});
+
+export type SeriesCreatorType = z.infer<typeof SeriesCreatorSchema>;
+
+
+// File: Genre.schema.ts
+
+export const GenreSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type GenreType = z.infer<typeof GenreSchema>;
+
+
+// File: GenreLocalization.schema.ts
+
+export const GenreLocalizationSchema = z.object({
+  locale: LanguagesSchema,
+  name: z.string(),
+  genreId: z.string(),
+});
+
+export type GenreLocalizationType = z.infer<typeof GenreLocalizationSchema>;
+
+
+// File: SeriesGenre.schema.ts
+
+export const SeriesGenreSchema = z.object({
+  sortOrder: z.number().int(),
+  seriesId: z.string(),
+  genreId: z.string(),
+});
+
+export type SeriesGenreType = z.infer<typeof SeriesGenreSchema>;
+
+
+// File: PlatformTag.schema.ts
+
+export const PlatformTagSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type PlatformTagType = z.infer<typeof PlatformTagSchema>;
+
+
+// File: TagLocalization.schema.ts
+
+export const TagLocalizationSchema = z.object({
+  locale: LanguagesSchema,
+  name: z.string(),
+  tagId: z.string(),
+});
+
+export type TagLocalizationType = z.infer<typeof TagLocalizationSchema>;
+
+
+// File: SeriesTag.schema.ts
+
+export const SeriesTagSchema = z.object({
+  seriesId: z.string(),
+  tagId: z.string(),
+});
+
+export type SeriesTagType = z.infer<typeof SeriesTagSchema>;
+
+
+// File: PlatformChapter.schema.ts
+
+export const PlatformChapterSchema = z.object({
+  id: z.string(),
+  chapterNumber: z.string(),
+  volumeNumber: z.string().nullish(),
+  sortKey: z.number().int(),
+  canonicalSlug: z.string(),
+  originalPublishedAt: z.date().nullish(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deletedAt: z.date().nullish(),
+  seriesId: z.string(),
+});
+
+export type PlatformChapterType = z.infer<typeof PlatformChapterSchema>;
+
+
+// File: ChapterLocalization.schema.ts
+
+export const ChapterLocalizationSchema = z.object({
+  locale: LanguagesSchema,
+  title: z.string().nullish(),
+  description: z.string().nullish(),
+  chapterId: z.string(),
+});
+
+export type ChapterLocalizationType = z.infer<typeof ChapterLocalizationSchema>;
+
+
+// File: TranslationProfile.schema.ts
+
+export const TranslationProfileSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  labelKey: z.string(),
+  descriptionKey: z.string(),
+  sortOrder: z.number().int(),
+  badgeStyle: z.string().nullish(),
+  isAiGenerated: z.boolean(),
+  isHumanReviewed: z.boolean(),
+  glossaryEnabled: z.boolean(),
+  characterMemoryEnabled: z.boolean(),
+  isPublic: z.boolean().default(true),
+  isIndexable: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type TranslationProfileType = z.infer<typeof TranslationProfileSchema>;
+
+
+// File: ReleaseGroup.schema.ts
+
+export const ReleaseGroupSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  description: z.string().nullish(),
+  website: z.string().nullish(),
+  verified: z.boolean(),
+  type: ReleaseGroupTypeSchema,
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type ReleaseGroupModel = z.infer<typeof ReleaseGroupSchema>;
+
+// File: ChapterRelease.schema.ts
+
+export const ChapterReleaseSchema = z.object({
+  id: z.string(),
+  targetLanguage: LanguagesSchema,
+  sourceLanguage: LanguagesSchema,
+  revision: z.number().int().default(1),
+  status: ReleaseStatusSchema.default("DRAFT"),
+  publishedAt: z.date().nullish(),
+  humanReviewed: z.boolean(),
+  glossaryUsed: z.boolean(),
+  characterMemoryUsed: z.boolean(),
+  translationQualityScore: z.number().int().nullish(),
+  ocrQualityScore: z.number().int().nullish(),
+  cleanupQualityScore: z.number().int().nullish(),
+  overallQualityScore: z.number().int().nullish(),
+  internalEngineName: z.string().nullish(),
+  internalEngineVersion: z.string().nullish(),
+  pageCount: z.number().int(),
+  storagePrefix: z.string().nullish(),
+  isCanonicalForLanguage: z.boolean(),
+  isPublic: z.boolean(),
+  isIndexable: z.boolean(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  chapterId: z.string(),
+  translationProfileId: z.string(),
+  releaseGroupId: z.string().nullish(),
+});
+
+export type ChapterReleaseType = z.infer<typeof ChapterReleaseSchema>;
+
+
+// File: ReleasePage.schema.ts
+
+export const ReleasePageSchema = z.object({
+  id: z.string(),
+  pageNumber: z.number().int(),
+  assetUrl: z.string(),
+  width: z.number().int(),
+  height: z.number().int(),
+  blurData: z.string().nullish(),
+  mimeType: z.string(),
+  fileSize: z.bigint().nullish(),
+  checksum: z.string().nullish(),
+  createdAt: z.date(),
+  releaseId: z.string(),
+});
+
+export type ReleasePageType = z.infer<typeof ReleasePageSchema>;
+
+
+// File: ReadingProgressRecord.schema.ts
+
+export const ReadingProgressRecordSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  chapterId: z.string(),
+  pageNumber: z.number().int(),
+  scrollRatio: z.number(),
+  updatedAt: z.date(),
+  completedAt: z.date().nullish(),
+  releaseId: z.string(),
+});
+
+export type ReadingProgressRecordType = z.infer<typeof ReadingProgressRecordSchema>;
+
+
+// File: SlugRedirect.schema.ts
+
+export const SlugRedirectSchema = z.object({
+  id: z.string(),
+  entityType: SlugEntityTypeSchema,
+  entityId: z.string(),
+  oldSlug: z.string(),
+  locale: LanguagesSchema.nullish(),
+  createdAt: z.date(),
+});
+
+export type SlugRedirectType = z.infer<typeof SlugRedirectSchema>;
 
 
 // File: Task.schema.ts

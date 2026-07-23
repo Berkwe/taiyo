@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080">
+  <rect width="720" height="1080" fill="#101112"/>
+  <path d="M360 80L620 360 360 690 100 360Z" fill="#192633" stroke="#486F91" stroke-width="14"/>
+  <path d="M360 680C210 560 230 350 360 240 490 350 510 560 360 680Z" fill="#486F91" opacity=".55"/>
+  <text x="58" y="880" fill="#EFF1F2" font-family="sans-serif" font-size="72" font-weight="700">CAM BAHÇE</text>
+</svg>

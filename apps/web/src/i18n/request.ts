@@ -6,8 +6,12 @@ import { parseLocale } from "~/utils/parse-locale"
 export default getRequestConfig(async () => {
   const cookie =
     (await cookies()).get(siteConfig.i18n.cookie.name)?.value || null
-  const header = (await headers()).get("Accept-Language")
-  const locale = parseLocale(cookie, header)
+  const requestHeaders = await headers()
+  const routeLocale = requestHeaders.get("x-novora-locale")
+  const header = requestHeaders.get("Accept-Language")
+  const locale = routeLocale
+    ? parseLocale(routeLocale, header)
+    : parseLocale(cookie, header)
 
   return {
     locale,

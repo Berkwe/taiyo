@@ -6,7 +6,8 @@
   "license": "MIT",
   "exports": {
     "./en.json": "./src/en.json",
-    "./pt.json": "./src/pt.json"
+    "./pt.json": "./src/pt.json",
+    "./tr.json": "./src/tr.json"
   },
   "scripts": {
     "clean": "rm -rf .turbo node_modules"

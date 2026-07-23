@@ -19,6 +19,7 @@ import media7 from "./seeds/medias/media-7"
 import media8 from "./seeds/medias/media-8"
 import media9 from "./seeds/medias/media-9"
 import media10 from "./seeds/medias/media-10"
+import { seedPlatform } from "./seeds/platform"
 import users from "./seeds/users"
 
 async function main() {
@@ -62,6 +63,10 @@ async function main() {
   await group9.execute().then(() => console.log("Group 9 seeded"))
   await group10.execute().then(() => console.log("Group 10 seeded"))
   await group11.execute().then(() => console.log("Group 11 seeded"))
+
+  // NovoraScans platform foundation (fictional, idempotent demo content)
+  console.log("\nNovoraScans platform:")
+  await seedPlatform().then(() => console.log("NovoraScans platform seeded"))
 
   // Meilisearch
   console.log(

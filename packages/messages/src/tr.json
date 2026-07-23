@@ -1,0 +1,30 @@
+{
+  "global": {
+    "cancel": "İptal",
+    "home": "Ana sayfa",
+    "dashboard": "Panel",
+    "settings": "Ayarlar",
+    "back": "Geri",
+    "backHome": "Ana sayfaya dön",
+    "guest": "Misafir",
+    "chapter": "Bölüm",
+    "latestReleases": "Son eklenen bölümler",
+    "latestMedias": "Yeni seriler",
+    "theme": {
+      "title": "Tema",
+      "system": "Sistem",
+      "light": "Açık",
+      "dark": "Koyu"
+    },
+    "language": {
+      "title": "Dil",
+      "tr": "Türkçe",
+      "en": "English"
+    }
+  },
+  "notFound": {
+    "title": "Sayfa bulunamadı",
+    "description": "Aradığınız sayfa taşınmış veya hiç var olmamış olabilir.",
+    "action": "Ana sayfaya dön"
+  }
+}

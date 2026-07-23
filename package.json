@@ -13,6 +13,7 @@
     "check:ws": "biome check apps/ packages/ tooling/",
     "lint:ws": "pnpm dlx sherif@latest",
     "typecheck": "turbo typecheck",
+    "test:platform": "corepack pnpm --filter @taiyomoe/db exec tsx --test ../../apps/web/tests/platform.test.ts",
     "postinstall": "pnpm lint:ws",
     "knip": "knip"
   },

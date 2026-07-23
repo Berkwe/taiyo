@@ -1,0 +1,355 @@
+model Series {
+  id                 String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug               String                @unique
+  originalLanguage   Languages
+  type               SeriesType
+  status             SeriesStatus
+  contentRating      PlatformContentRating @default(TEEN)
+  publicationYear    Int?
+  defaultAccentColor String?
+  isFeatured         Boolean               @default(false)
+  isSearchable       Boolean               @default(true)
+  isIndexable        Boolean               @default(true)
+  publishedAt        DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  localizations SeriesLocalization[]
+  aliases       SeriesAlias[]
+  creators      SeriesCreator[]
+  genres        SeriesGenre[]
+  tags          SeriesTag[]
+  chapters      PlatformChapter[]
+
+  @@index([status, isSearchable, deletedAt])
+  @@index([isFeatured, publishedAt])
+}
+
+model SeriesLocalization {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  locale                 Languages
+  title                  String
+  shortTitle             String?
+  description            String
+  seoTitleOverride       String?
+  seoDescriptionOverride String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId String @db.Uuid
+
+  @@unique([seriesId, locale])
+  @@index([locale, title])
+}
+
+model SeriesAlias {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  locale          Languages?
+  alias           String
+  normalizedAlias String
+  type            SeriesAliasType @default(ALTERNATIVE)
+  createdAt       DateTime        @default(now())
+
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId String @db.Uuid
+
+  @@unique([seriesId, locale, normalizedAlias])
+  @@index([normalizedAlias])
+}
+
+model PlatformCreator {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  series SeriesCreator[]
+}
+
+model SeriesCreator {
+  role      CreatorRole
+  sortOrder Int         @default(0)
+
+  series    Series          @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId  String          @db.Uuid
+  creator   PlatformCreator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId String          @db.Uuid
+
+  @@id([seriesId, creatorId, role])
+}
+
+model Genre {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  localizations GenreLocalization[]
+  series        SeriesGenre[]
+}
+
+model GenreLocalization {
+  locale Languages
+  name   String
+
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId String @db.Uuid
+
+  @@id([genreId, locale])
+  @@unique([locale, name])
+}
+
+model SeriesGenre {
+  sortOrder Int @default(0)
+
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId String @db.Uuid
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId  String @db.Uuid
+
+  @@id([seriesId, genreId])
+}
+
+model PlatformTag {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  localizations TagLocalization[]
+  series        SeriesTag[]
+}
+
+model TagLocalization {
+  locale Languages
+  name   String
+
+  tag   PlatformTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId String      @db.Uuid
+
+  @@id([tagId, locale])
+  @@unique([locale, name])
+}
+
+model SeriesTag {
+  series   Series      @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId String      @db.Uuid
+  tag      PlatformTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId    String      @db.Uuid
+
+  @@id([seriesId, tagId])
+}
+
+model PlatformChapter {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chapterNumber       String
+  volumeNumber        String?
+  sortKey             Int
+  canonicalSlug       String
+  originalPublishedAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  series        Series                @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId      String                @db.Uuid
+  localizations ChapterLocalization[]
+  releases      ChapterRelease[]
+
+  @@unique([seriesId, chapterNumber])
+  @@unique([seriesId, canonicalSlug])
+  @@index([seriesId, sortKey])
+}
+
+model ChapterLocalization {
+  locale      Languages
+  title       String?
+  description String?
+
+  chapter   PlatformChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapterId String          @db.Uuid
+
+  @@id([chapterId, locale])
+}
+
+model TranslationProfile {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                   String   @unique
+  labelKey               String
+  descriptionKey         String
+  sortOrder              Int
+  badgeStyle             String?
+  isAiGenerated          Boolean  @default(false)
+  isHumanReviewed        Boolean  @default(false)
+  glossaryEnabled        Boolean  @default(false)
+  characterMemoryEnabled Boolean  @default(false)
+  isPublic               Boolean  @default(true)
+  isIndexable            Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  releases ChapterRelease[]
+
+  @@index([isPublic, sortOrder])
+}
+
+model ReleaseGroup {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String           @unique
+  name        String
+  description String?
+  website     String?
+  verified    Boolean          @default(false)
+  type        ReleaseGroupType
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  releases ChapterRelease[]
+}
+
+model ChapterRelease {
+  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  targetLanguage          Languages
+  sourceLanguage          Languages
+  revision                Int           @default(1)
+  status                  ReleaseStatus @default(DRAFT)
+  publishedAt             DateTime?
+  humanReviewed           Boolean       @default(false)
+  glossaryUsed            Boolean       @default(false)
+  characterMemoryUsed     Boolean       @default(false)
+  translationQualityScore Int?
+  ocrQualityScore         Int?
+  cleanupQualityScore     Int?
+  overallQualityScore     Int?
+  internalEngineName      String?
+  internalEngineVersion   String?
+  pageCount               Int           @default(0)
+  storagePrefix           String?
+  isCanonicalForLanguage  Boolean       @default(false)
+  isPublic                Boolean       @default(false)
+  isIndexable             Boolean       @default(false)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  chapter              PlatformChapter         @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapterId            String                  @db.Uuid
+  translationProfile   TranslationProfile      @relation(fields: [translationProfileId], references: [id])
+  translationProfileId String                  @db.Uuid
+  releaseGroup         ReleaseGroup?           @relation(fields: [releaseGroupId], references: [id])
+  releaseGroupId       String?                 @db.Uuid
+  pages                ReleasePage[]
+  readingProgress      ReadingProgressRecord[]
+
+  @@unique([chapterId, targetLanguage, translationProfileId, revision], map: "ChapterRelease_chapterId_targetLanguage_translationProfileId_re")
+  @@index([chapterId, targetLanguage, isPublic, publishedAt], map: "ChapterRelease_chapterId_targetLanguage_isPublic_publishedAt_id")
+}
+
+model ReleasePage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pageNumber Int
+  assetUrl   String
+  width      Int
+  height     Int
+  blurData   String?
+  mimeType   String
+  fileSize   BigInt?
+  checksum   String?
+  createdAt  DateTime @default(now())
+
+  release   ChapterRelease @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  releaseId String         @db.Uuid
+
+  @@unique([releaseId, pageNumber])
+}
+
+model ReadingProgressRecord {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @db.Uuid
+  chapterId   String    @db.Uuid
+  pageNumber  Int
+  scrollRatio Float
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  release   ChapterRelease @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  releaseId String         @db.Uuid
+
+  @@unique([userId, releaseId])
+  @@index([userId, updatedAt])
+}
+
+model SlugRedirect {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityType SlugEntityType
+  entityId   String         @db.Uuid
+  oldSlug    String
+  locale     Languages?
+  createdAt  DateTime       @default(now())
+
+  @@unique([entityType, oldSlug, locale])
+  @@index([entityType, entityId])
+}
+
+enum SeriesType {
+  WEBTOON
+  MANGA
+  MANHWA
+  MANHUA
+  COMIC
+  LIGHT_NOVEL
+}
+
+enum SeriesStatus {
+  ONGOING
+  COMPLETED
+  HIATUS
+  ANNOUNCED
+  CANCELLED
+}
+
+enum PlatformContentRating {
+  EVERYONE
+  TEEN
+  MATURE
+}
+
+enum SeriesAliasType {
+  ORIGINAL
+  ROMANIZED
+  ENGLISH
+  TURKISH
+  ALTERNATIVE
+  FORMER_TITLE
+}
+
+enum CreatorRole {
+  AUTHOR
+  ARTIST
+  WRITER
+  COLORIST
+  STUDIO
+}
+
+enum ReleaseGroupType {
+  OFFICIAL
+  INTERNAL
+  COMMUNITY
+  PARTNER
+}
+
+enum ReleaseStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SlugEntityType {
+  SERIES
+  CHAPTER
+  GENRE
+  CREATOR
+}

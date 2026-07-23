@@ -15,6 +15,33 @@
 @custom-variant horizontal (&:is([data-orientation=horizontal]));
 
 :root {
+  color-scheme: light;
+  /* Novora semantic tokens. Product components only consume these aliases. */
+  --nv-background: #f6f7f8;
+  --nv-foreground: #17191b;
+  --nv-surface: #ffffff;
+  --nv-surface-raised: #eef0f2;
+  --nv-surface-muted: #e4e7ea;
+  --nv-primary: #486f91;
+  --nv-primary-hover: #3d607e;
+  --nv-primary-foreground: #ffffff;
+  --nv-primary-soft: #e2ebf2;
+  --nv-secondary: #dce1e5;
+  --nv-secondary-foreground: #202326;
+  --nv-accent: var(--series-accent, var(--nv-primary));
+  --nv-accent-foreground: #ffffff;
+  --nv-muted: #e7eaed;
+  --nv-muted-foreground: #646a70;
+  --nv-border: #d2d7dc;
+  --nv-input: #c4cbd1;
+  --nv-ring: #486f91;
+  --nv-success: #287a57;
+  --nv-warning: #9a6418;
+  --nv-danger: #a33b44;
+  --nv-info: #356d9e;
+  --nv-overlay: rgb(8 10 12 / 72%);
+  --nv-reader-background: #0b0c0d;
+  --nv-reader-foreground: #eff1f2;
   /* Background Standard */
   --background: 0, 0%, 100%; /* white - default background */
   --background-subtle: 220, 14%, 94%; /* gray.100 - hovering on items, subtle raising */
@@ -80,6 +107,32 @@
 }
 
 .dark {
+  color-scheme: dark;
+  --nv-background: #101112;
+  --nv-foreground: #eff1f2;
+  --nv-surface: #181a1c;
+  --nv-surface-raised: #212428;
+  --nv-surface-muted: #192633;
+  --nv-primary: #486f91;
+  --nv-primary-hover: #5a83a6;
+  --nv-primary-foreground: #ffffff;
+  --nv-primary-soft: #192633;
+  --nv-secondary: #212428;
+  --nv-secondary-foreground: #eff1f2;
+  --nv-accent: var(--series-accent, var(--nv-primary));
+  --nv-accent-foreground: #ffffff;
+  --nv-muted: #212428;
+  --nv-muted-foreground: #999ea4;
+  --nv-border: #2d3136;
+  --nv-input: #3a4046;
+  --nv-ring: #5a83a6;
+  --nv-success: #57a87e;
+  --nv-warning: #d0a052;
+  --nv-danger: #dc6b74;
+  --nv-info: #6fa0c8;
+  --nv-overlay: rgb(8 10 12 / 78%);
+  --nv-reader-background: #08090a;
+  --nv-reader-foreground: #eff1f2;
   /* Background Standard */
   --background: 240, 0%, 5%;
   --background-subtle: 330, 0%, 11.75%;
@@ -141,6 +194,31 @@
 }
 
 @theme inline {
+  --color-background: var(--nv-background);
+  --color-foreground: var(--nv-foreground);
+  --color-surface: var(--nv-surface);
+  --color-surface-raised: var(--nv-surface-raised);
+  --color-surface-muted: var(--nv-surface-muted);
+  --color-nv-primary: var(--nv-primary);
+  --color-nv-primary-hover: var(--nv-primary-hover);
+  --color-nv-primary-foreground: var(--nv-primary-foreground);
+  --color-nv-primary-soft: var(--nv-primary-soft);
+  --color-nv-secondary: var(--nv-secondary);
+  --color-nv-secondary-foreground: var(--nv-secondary-foreground);
+  --color-accent: var(--nv-accent);
+  --color-accent-foreground: var(--nv-accent-foreground);
+  --color-nv-muted: var(--nv-muted);
+  --color-nv-muted-foreground: var(--nv-muted-foreground);
+  --color-nv-border: var(--nv-border);
+  --color-input: var(--nv-input);
+  --color-ring: var(--nv-ring);
+  --color-nv-success: var(--nv-success);
+  --color-nv-warning: var(--nv-warning);
+  --color-danger: var(--nv-danger);
+  --color-nv-info: var(--nv-info);
+  --color-overlay: var(--nv-overlay);
+  --color-reader-background: var(--nv-reader-background);
+  --color-reader-foreground: var(--nv-reader-foreground);
   /* Background Standard */
   --color-default: hsla(var(--background), 1);
   --color-subtle: hsla(var(--background-subtle), 1);

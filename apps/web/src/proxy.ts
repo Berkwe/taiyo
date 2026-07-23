@@ -1,14 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getSession } from "~/utils/get-session"
 
 export default async function proxy(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams
-  const session = await getSession()
-
-  console.log("session", session)
+  const routeLocale = req.nextUrl.pathname.split("/")[1]
+  const requestHeaders = new Headers(req.headers)
+  if (routeLocale === "tr" || routeLocale === "en") {
+    requestHeaders.set("x-novora-locale", routeLocale)
+  }
 
   // User trying to access auth-related routes while logged in
-  if (req.nextUrl.pathname.startsWith("/auth/") && session) {
+  if (
+    req.nextUrl.pathname.startsWith("/auth/") &&
+    (await (await import("~/utils/get-session")).getSession())
+  ) {
     return NextResponse.redirect(new URL("/", req.url))
   }
 
@@ -21,10 +25,9 @@ export default async function proxy(req: NextRequest) {
     )
   }
 
-  return NextResponse.next()
+  return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 export const config = {
-  runtime: "nodejs",
-  matcher: ["/auth/:path*", "/api/auth/error"],
+  matcher: ["/tr/:path*", "/en/:path*", "/auth/:path*", "/api/auth/error"],
 }
