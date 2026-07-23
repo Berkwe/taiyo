@@ -13,9 +13,10 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "typecheck": "tsc --noEmit",
-    "seed": "prisma migrate reset && pnpm -F @taiyomoe/logs run migrate",
-    "db": "prisma",
-    "migrate": "tsx ./src/migrations-handler.ts"
+    "seed": "node ../../tooling/with-root-env.mjs tsx ./src/prisma/seed-platform.ts",
+    "seed:legacy:reset": "node ../../tooling/with-root-env.mjs prisma migrate reset && node ../../tooling/with-root-env.mjs pnpm -F @taiyomoe/logs run migrate",
+    "db": "node ../../tooling/with-root-env.mjs prisma",
+    "migrate": "node ../../tooling/with-root-env.mjs tsx ./src/migrations-handler.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.1.0",

@@ -17,9 +17,7 @@ Use Node 24.11.1 and Docker:
 cp .env.example .env
 corepack enable
 corepack pnpm install
-docker compose up -d
-corepack pnpm --filter @taiyomoe/db db migrate deploy
-corepack pnpm --filter @taiyomoe/db seed
+corepack pnpm setup:local
 corepack pnpm dev
 ```
 
