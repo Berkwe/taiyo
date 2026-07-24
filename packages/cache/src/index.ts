@@ -30,5 +30,16 @@ export const cacheClient = {
         parseCache<Date>(client.get(`users:verification-email-sent-at:${id}`)),
     },
   },
+  rateLimit: {
+    consume: async (key: string, limit: number, windowSeconds: number) => {
+      const namespacedKey = `rate-limit:${key}`
+      const count = await client.incr(namespacedKey)
+      if (count === 1) await client.expire(namespacedKey, windowSeconds)
+      return {
+        allowed: count <= limit,
+        remaining: Math.max(0, limit - count),
+      }
+    },
+  },
   clear: () => client.flushdb(),
 }

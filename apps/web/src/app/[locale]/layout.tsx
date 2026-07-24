@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation"
 import { AppHeader } from "~/components/platform/app-header"
+import { DebugRoleSwitcher } from "~/components/platform/debug-role-switcher"
 import { Footer } from "~/components/platform/footer"
+import { getDebugViewerRole, isDebugMode } from "~/features/debug/viewer"
 import { isLocale, locales } from "~/features/platform/domain"
 
 export function generateStaticParams() {
@@ -16,12 +18,16 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params
   if (!isLocale(locale)) notFound()
+  const debugRole = isDebugMode()
+    ? ((await getDebugViewerRole()) ?? "GUEST")
+    : null
 
   return (
     <>
       <AppHeader locale={locale} />
       {children}
       <Footer locale={locale} />
+      {debugRole ? <DebugRoleSwitcher initialRole={debugRole} /> : null}
     </>
   )
 }

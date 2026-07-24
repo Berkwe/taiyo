@@ -16,11 +16,13 @@ export const PasswordField = <
 >({
   label,
   showStrength,
+  autoComplete,
   children,
   ...props
 }: Omit<ControllerProps<TFieldValues, TName>, "render"> & {
   label?: string
   showStrength?: boolean
+  autoComplete?: "current-password" | "new-password" | "off"
   children?: React.ReactNode
 }) => {
   const t = useTranslations("global")
@@ -35,7 +37,11 @@ export const PasswordField = <
             {children}
           </div>
           <FormControl>
-            <PasswordInput placeholder="•••••••••••••" {...field} />
+            <PasswordInput
+              autoComplete={autoComplete}
+              placeholder="•••••••••••••"
+              {...field}
+            />
           </FormControl>
           {showStrength && <PasswordStrength value={field.value} />}
           {!showStrength && <FormMessage />}

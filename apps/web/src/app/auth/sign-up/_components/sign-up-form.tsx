@@ -53,8 +53,14 @@ export const SignUpForm = () => {
           placeholder="rdx"
         />
         <EmailField control={form.control} name="email" />
-        <PasswordField control={form.control} name="password" showStrength />
         <PasswordField
+          autoComplete="new-password"
+          control={form.control}
+          name="password"
+          showStrength
+        />
+        <PasswordField
+          autoComplete="off"
           control={form.control}
           name="confirmPassword"
           label={t("global.confirmPassword")}

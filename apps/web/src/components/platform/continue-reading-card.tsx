@@ -34,6 +34,12 @@ export function ContinueReadingCard({ locale }: { locale: "tr" | "en" }) {
   }>()
 
   useEffect(() => {
+    let latest:
+      | {
+          progress: ReadingProgress
+          href: string
+        }
+      | undefined
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index)
       if (!key?.startsWith(PROGRESS_KEY_PREFIX)) continue
@@ -41,12 +47,15 @@ export function ContinueReadingCard({ locale }: { locale: "tr" | "en" }) {
       if (!progress) continue
       const [, , slug, chapter] = key.split(":")
       if (!slug || !chapter) continue
-      setEntry({
+      const candidate = {
         progress,
         href: `/${locale}/${locale === "tr" ? "oku" : "read"}/${slug}/${chapter}/${progress.releaseId}`,
-      })
-      break
+      }
+      if (!latest || candidate.progress.updatedAt > latest.progress.updatedAt) {
+        latest = candidate
+      }
     }
+    setEntry(latest)
   }, [locale])
 
   if (!entry) return null

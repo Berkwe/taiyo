@@ -1,7 +1,6 @@
 import { Button } from "@taiyomoe/ui/components/button"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { AuthDiscordButton } from "~/app/auth/_components/auth-discord-button"
 import { AuthGoogleButton } from "~/app/auth/_components/auth-google-button"
 import { Separator } from "~/components/ui/separator"
 import { useAuthStore } from "~/stores/auth-flow.store"
@@ -14,7 +13,6 @@ export const SignUpSocials = () => {
     <div className="space-y-8">
       <div className="space-y-2">
         <AuthGoogleButton />
-        <AuthDiscordButton />
       </div>
       <Separator className="w-full bg-emphasis">{t("global.or")}</Separator>
       <div className="space-y-4">

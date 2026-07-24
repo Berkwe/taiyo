@@ -17,7 +17,7 @@ export function Footer({ locale }: { locale: Locale }) {
           ["Contact", "contact"],
         ]
   return (
-    <footer className="mt-20 border-nv-border border-t bg-surface">
+    <footer className="site-footer mt-20 border-nv-border border-t bg-surface">
       <div className="grid gap-8 py-10 content-shell md:grid-cols-[1fr_auto]">
         <div>
           <p className="font-bold">NovoraScans</p>

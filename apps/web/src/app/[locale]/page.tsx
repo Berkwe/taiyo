@@ -2,10 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import {
-  SectionHeader,
-  TranslationProfileBadge,
-} from "~/components/platform/content"
+import { SectionHeader } from "~/components/platform/content"
 import { ContinueReadingCard } from "~/components/platform/continue-reading-card"
 import { SeriesCard } from "~/components/platform/series-card"
 import { publicSeries } from "~/features/platform/catalog"
@@ -109,7 +106,7 @@ export default async function HomePage({
               </Link>
               <a
                 className="inline-flex min-h-12 items-center border border-nv-border bg-background px-6 font-semibold hover:bg-surface-raised"
-                href="#quality-profiles"
+                href={paths.about(locale)}
               >
                 {t.hero.secondary}
               </a>
@@ -177,35 +174,6 @@ export default async function HomePage({
               </span>
             </Link>
           ))}
-        </div>
-      </section>
-
-      <section className="pt-20 content-shell" id="quality-profiles">
-        <SectionHeader title={t.sections.quality} />
-        <div className="grid gap-px border border-nv-border bg-nv-border md:grid-cols-3">
-          {["profile-ai-ultra", "profile-ai-standard", "profile-community"].map(
-            (profileId) => (
-              <article className="bg-surface p-6" key={profileId}>
-                <TranslationProfileBadge
-                  locale={locale}
-                  profileId={profileId}
-                />
-                <p className="mt-4 text-nv-muted-foreground leading-7">
-                  {profileId === "profile-ai-ultra"
-                    ? locale === "tr"
-                      ? "Sözlük, karakter hafızası ve editör kontrolüyle bağlamı koruyan premium sürüm."
-                      : "A premium edition preserving context with glossary, character memory and editorial review."
-                    : profileId === "profile-ai-standard"
-                      ? locale === "tr"
-                        ? "Daha hızlı yayın temposu için otomatik kontrollerle dengelenen sürüm."
-                        : "A balanced edition using automated checks for a faster release cadence."
-                      : locale === "tr"
-                        ? "Topluluk çevirmenleri ve editörlerinin hazırladığı alternatif yorum."
-                        : "An alternative interpretation by community translators and editors."}
-                </p>
-              </article>
-            ),
-          )}
         </div>
       </section>
 

@@ -2,6 +2,18 @@
 
 Requirements: Node 24.11.1, Corepack, Docker, and Git.
 
+For the one-click flow, double-click `NovoraScans.desktop` or run:
+
+```bash
+./start-local.sh
+```
+
+The launcher opens the Turkish home page when the development server is ready.
+Set `NOVORA_LOCAL_URL` to open a different local route, or
+`NOVORA_NO_BROWSER=1` to keep the browser closed.
+
+For the manual flow:
+
 ```bash
 cp .env.example .env
 corepack enable

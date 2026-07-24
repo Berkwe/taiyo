@@ -31,6 +31,7 @@ export interface TranslationProfile {
 export interface ReleasePage {
   pageNumber: number
   src: string
+  storageKey?: string
   width: number
   height: number
   alt: string

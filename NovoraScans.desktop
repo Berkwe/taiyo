@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NovoraScans Başlat
+Comment=Yerel servisleri ve NovoraScans geliştirme sunucusunu başlat
+Path=/home/berkwe/Desktop/myProjects/NovoraScansSite
+Exec=./start-local.sh
+Terminal=true
+Categories=Development;

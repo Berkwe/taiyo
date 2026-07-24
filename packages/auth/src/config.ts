@@ -27,7 +27,7 @@ import { sendResetPassword } from "./utils/send-reset-password"
 import { sendVerificationEmail } from "./utils/send-verification-email"
 
 export const auth = betterAuth({
-  appName: "Taiyō",
+  appName: "NovoraScans",
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
@@ -43,13 +43,10 @@ export const auth = betterAuth({
   },
   account: { accountLinking: { enabled: false } },
   user: {
+    changeEmail: { enabled: true },
     additionalFields: { settings: { fieldName: "settings", type: "string" } },
   },
   socialProviders: {
-    discord: {
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
-    },
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,

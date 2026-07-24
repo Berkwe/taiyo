@@ -9,7 +9,6 @@ import { useHandleAuthError } from "~/app/hooks/use-handle-auth-error"
 import { CheckboxField } from "~/components/fields/checkbox-field"
 import { EmailField } from "~/components/fields/email-field"
 import { PasswordField } from "~/components/fields/password-field"
-import { TurnstileField } from "~/components/fields/turnstile-field"
 import { BackArrowButton } from "~/components/ui/back-arrow-button"
 import { Form } from "~/components/ui/form"
 import {
@@ -32,7 +31,6 @@ export const SignInFormEmail = () => {
       email: "",
       password: "",
       rememberMe: true,
-      turnstileToken: "",
     },
   })
 
@@ -40,10 +38,10 @@ export const SignInFormEmail = () => {
     await authClient.signIn.email({
       ...pick(values, ["email", "password", "rememberMe"]),
       fetchOptions: {
-        headers: { "x-captcha-response": values.turnstileToken },
         onSuccess: ({ data }) => {
           toast.success(t("auth.signIn.success", { username: data?.user.name }))
-          router.push("/")
+          router.push("/tr")
+          router.refresh()
         },
         onError: (error) => {
           if (
@@ -66,7 +64,11 @@ export const SignInFormEmail = () => {
       <BackArrowButton onClick={goToSocials} />
       <Form {...form} onSubmit={handlePress}>
         <EmailField control={form.control} name="email" />
-        <PasswordField control={form.control} name="password">
+        <PasswordField
+          autoComplete="current-password"
+          control={form.control}
+          name="password"
+        >
           <ForgotPasswordButton />
         </PasswordField>
         <CheckboxField
@@ -74,7 +76,6 @@ export const SignInFormEmail = () => {
           name="rememberMe"
           label="Remember me"
         />
-        <TurnstileField control={form.control} name="turnstileToken" />
         <AuthSubmitButton label="signIn.title" />
       </Form>
     </div>

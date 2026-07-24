@@ -33,6 +33,13 @@ model User {
   createdMediaTrackers  Tracker[]
   uploadedMediaChapters Chapter[]
   createdGroups         Group[]
+  contentReports        ContentReport[]
+  assignedReports       ContentReport[]         @relation("AssignedReports")
+  readingProgress       ReadingProgressRecord[]
+  seriesFollows         SeriesFollow[]
+  notifications         SiteNotification[]
+  notificationSettings  NotificationPreference?
+  contentRevisions      ContentRevision[]
 }
 
 model UserProfile {
@@ -132,9 +139,8 @@ model Verification {
 // ----- ENUMS
 enum Roles {
   USER
-  MODERATOR
-  UPLOADER_INTERN
   UPLOADER
+  EDITOR
   ADMIN
 }
 

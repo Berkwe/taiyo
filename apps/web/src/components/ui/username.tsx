@@ -9,9 +9,8 @@ const username = tv({
   variants: {
     role: {
       USER: "",
-      MODERATOR: "",
-      UPLOADER_INTERN: "",
       UPLOADER: "",
+      EDITOR: "",
       ADMIN: "text-brand brightness-70",
     },
   },

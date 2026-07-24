@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
 import {
   type CatalogFilters,
   filterSeries,
@@ -5,8 +8,9 @@ import {
 } from "~/features/platform/catalog"
 import { copy } from "~/features/platform/copy"
 import type { Locale } from "~/features/platform/domain"
-import { translationProfiles } from "~/features/platform/fixtures"
+import { paths } from "~/features/platform/paths"
 import { EmptyState } from "./content"
+import { RandomSeriesButton } from "./random-series-button"
 import { SeriesCard } from "./series-card"
 
 const types = ["WEBTOON", "MANGA", "MANHWA", "MANHUA", "COMIC", "LIGHT_NOVEL"]
@@ -22,7 +26,30 @@ export function CatalogPage({
   searchOnly?: boolean
 }) {
   const t = copy[locale]
-  const results = filterSeries(publicSeries, filters, locale)
+  const [liveFilters, setLiveFilters] = useState<CatalogFilters>({
+    q: filters.q ?? "",
+    type: filters.type ?? "",
+    status: filters.status ?? "",
+    sort: filters.sort ?? "popular",
+  })
+  const results = useMemo(
+    () => filterSeries(publicSeries, liveFilters, locale),
+    [liveFilters, locale],
+  )
+
+  useEffect(() => {
+    const parameters = new URLSearchParams()
+    for (const [key, value] of Object.entries(liveFilters)) {
+      if (value && !(key === "sort" && value === "popular"))
+        parameters.set(key, value)
+    }
+    const query = parameters.toString()
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}`,
+    )
+  }, [liveFilters])
 
   return (
     <main className="py-12 content-shell" id="main-content">
@@ -36,21 +63,36 @@ export function CatalogPage({
         <p className="mt-3 text-nv-muted-foreground">
           {t.discover.description}
         </p>
+        {!searchOnly ? (
+          <div className="mt-5">
+            <RandomSeriesButton
+              hrefs={publicSeries.map((series) =>
+                paths.series(locale, series.slug),
+              )}
+              label={locale === "tr" ? "Rastgele seri" : "Random series"}
+            />
+          </div>
+        ) : null}
       </header>
 
       <form
-        action=""
         className="mt-8 grid gap-3 border border-nv-border bg-surface p-4 md:grid-cols-2 lg:grid-cols-6"
-        method="get"
+        onSubmit={(event) => event.preventDefault()}
       >
         <label className="grid gap-1 text-sm lg:col-span-2">
           <span>{t.nav.search}</span>
           <input
             className="min-h-11 border border-input bg-background px-3 outline-none focus:border-ring"
-            defaultValue={filters.q}
+            onChange={(event) =>
+              setLiveFilters((current) => ({
+                ...current,
+                q: event.target.value,
+              }))
+            }
             name="q"
             placeholder={t.discover.search}
             type="search"
+            value={liveFilters.q}
           />
         </label>
         {!searchOnly ? (
@@ -59,8 +101,14 @@ export function CatalogPage({
               <span>Format</span>
               <select
                 className="min-h-11 border border-input bg-background px-3"
-                defaultValue={filters.type}
+                onChange={(event) =>
+                  setLiveFilters((current) => ({
+                    ...current,
+                    type: event.target.value,
+                  }))
+                }
                 name="type"
+                value={liveFilters.type}
               >
                 <option value="">{t.discover.allTypes}</option>
                 {types.map((type) => (
@@ -74,8 +122,14 @@ export function CatalogPage({
               <span>{locale === "tr" ? "Durum" : "Status"}</span>
               <select
                 className="min-h-11 border border-input bg-background px-3"
-                defaultValue={filters.status}
+                onChange={(event) =>
+                  setLiveFilters((current) => ({
+                    ...current,
+                    status: event.target.value,
+                  }))
+                }
                 name="status"
+                value={liveFilters.status}
               >
                 <option value="">{t.discover.allStatuses}</option>
                 {statuses.map((status) => (
@@ -86,30 +140,17 @@ export function CatalogPage({
               </select>
             </label>
             <label className="grid gap-1 text-sm">
-              <span>
-                {locale === "tr" ? "Çeviri kalitesi" : "Translation quality"}
-              </span>
-              <select
-                className="min-h-11 border border-input bg-background px-3"
-                defaultValue={filters.profile}
-                name="profile"
-              >
-                <option value="">
-                  {locale === "tr" ? "Tüm profiller" : "All profiles"}
-                </option>
-                {translationProfiles.map((profile) => (
-                  <option value={profile.slug} key={profile.id}>
-                    {profile.labels[locale]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm">
               <span>{locale === "tr" ? "Sırala" : "Sort"}</span>
               <select
                 className="min-h-11 border border-input bg-background px-3"
-                defaultValue={filters.sort ?? "popular"}
+                onChange={(event) =>
+                  setLiveFilters((current) => ({
+                    ...current,
+                    sort: event.target.value as "popular" | "updated",
+                  }))
+                }
                 name="sort"
+                value={liveFilters.sort}
               >
                 <option value="popular">{t.discover.popular}</option>
                 <option value="updated">{t.discover.updated}</option>
@@ -117,12 +158,11 @@ export function CatalogPage({
             </label>
           </>
         ) : null}
-        <button
-          className="min-h-11 self-end bg-nv-primary px-5 font-semibold text-nv-primary-foreground hover:bg-nv-primary-hover"
-          type="submit"
-        >
-          {t.discover.submit}
-        </button>
+        <p className="self-end pb-3 text-nv-muted-foreground text-sm">
+          {locale === "tr"
+            ? "Sonuçlar yazdıkça güncellenir."
+            : "Results update as you type."}
+        </p>
       </form>
 
       <div className="mt-10 flex items-baseline justify-between border-nv-border border-b pb-4">

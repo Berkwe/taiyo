@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Reader } from "~/components/platform/reader"
+import { getSession } from "~/utils/get-session"
 import type { Locale } from "./domain"
 import { getChapter, getRelease, getSeries } from "./fixtures"
 import { paths } from "./paths"
@@ -76,9 +77,38 @@ export async function ReaderPage({
         )
       : undefined
   }
+  const chapterOptions = series.chapters.flatMap((item) => {
+    const itemRelease =
+      item.releases.find(
+        (candidate) =>
+          candidate.targetLanguage === expectedLocale &&
+          candidate.profileId === release.profileId,
+      ) ??
+      item.releases.find(
+        (candidate) =>
+          candidate.targetLanguage === expectedLocale &&
+          candidate.isCanonicalForLanguage,
+      )
+    return itemRelease
+      ? [
+          {
+            number: item.number,
+            href: paths.reader(
+              expectedLocale,
+              series.slug,
+              item.number,
+              itemRelease.id,
+            ),
+          },
+        ]
+      : []
+  })
+  const session = await getSession()
   return (
     <Reader
+      authenticated={Boolean(session?.user)}
       chapter={chapter}
+      chapterOptions={chapterOptions}
       locale={expectedLocale}
       nextHref={resolveAdjacent(next)}
       previousHref={resolveAdjacent(previous)}

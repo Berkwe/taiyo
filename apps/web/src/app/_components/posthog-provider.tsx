@@ -8,8 +8,13 @@ import { env } from "~/env"
 import { useUser } from "~/stores/auth.store"
 import type { ProviderProps } from "~/utils/types"
 
+const analyticsEnabled =
+  env.NEXT_PUBLIC_POSTHOG_KEY.trim().length > 0 &&
+  env.NEXT_PUBLIC_POSTHOG_KEY !== "disabled"
+
 export const PostHogProvider = ({ children }: ProviderProps) => {
   useEffect(() => {
+    if (!analyticsEnabled) return
     posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
       api_host: "/ingest",
       ui_host: "https://us.posthog.com",
@@ -33,18 +38,18 @@ const PostHogPageView = () => {
   const user = useUser()
 
   useEffect(() => {
-    if (!pathname || !posthog) return
+    if (!analyticsEnabled || !pathname || !posthog) return
 
     const search = searchParams.toString()
-    const url = search ? `?${search}` : window.origin + pathname
+    const url = `${window.origin}${pathname}${search ? `?${search}` : ""}`
 
     posthog.capture("$pageview", { $current_url: url })
   }, [pathname, searchParams, posthog])
 
   useEffect(() => {
-    if (!user || !posthog || !posthog._isIdentified()) return
+    if (!analyticsEnabled || !user || !posthog) return
 
-    posthog.identify(user.email)
+    posthog.identify(user.id)
   }, [user, posthog])
 
   return null

@@ -2,7 +2,6 @@ import { Button } from "@taiyomoe/ui/components/button"
 import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { AuthDiscordButton } from "~/app/auth/_components/auth-discord-button"
 import { AuthGoogleButton } from "~/app/auth/_components/auth-google-button"
 import { Separator } from "~/components/ui/separator"
 import { ShineButton } from "~/components/ui/shine-button"
@@ -16,7 +15,6 @@ export const SignInSocials = () => {
     <div className="space-y-8">
       <div className="space-y-2">
         <AuthGoogleButton />
-        <AuthDiscordButton />
       </div>
       <Separator className="w-full bg-emphasis">{t("global.or")}</Separator>
       <div className="space-y-2">
@@ -27,7 +25,7 @@ export const SignInSocials = () => {
           {t("auth.magicLink")}
           <ArrowRightIcon />
         </ShineButton>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="grid gap-2 sm:grid-cols-2">
           <Button variant="outline" onClick={() => goToStep("email")}>
             {t("auth.email")}
           </Button>

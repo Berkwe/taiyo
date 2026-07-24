@@ -140,10 +140,14 @@ export function LoadingSkeleton() {
   return (
     <output
       aria-label="Yükleniyor"
-      className="grid animate-pulse grid-cols-2 gap-4 md:grid-cols-4"
+      className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
     >
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div className="aspect-[2/3] bg-surface-raised" key={index} />
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div className="overflow-hidden" key={index}>
+          <div className="aspect-[2/3] animate-pulse bg-surface-raised" />
+          <div className="mt-3 h-5 w-4/5 animate-pulse rounded bg-surface-raised" />
+          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-surface-raised" />
+        </div>
       ))}
     </output>
   )

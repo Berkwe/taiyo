@@ -16,9 +16,14 @@ const root = findWorkspaceRoot(process.cwd())
 const envFile = join(root, ".env")
 if (existsSync(envFile)) loadEnvFile(envFile)
 
+const [command, ...args] = process.argv.slice(2)
+if (!command) throw new Error("Usage: with-root-env <command> [...args]")
+const isBuildCommand = args.includes("build")
+const isLocalEnvironment = process.env.NODE_ENV !== "production"
+
 // Local-only fallbacks keep fixture-backed development independent from
 // optional third-party accounts. Production must provide real values.
-if (process.env.NODE_ENV !== "production") {
+if (isLocalEnvironment) {
   const localDefaults = {
     BETTER_AUTH_SECRET: "local-development-only-change-before-production",
     DISCORD_CLIENT_ID: "disabled",
@@ -33,6 +38,7 @@ if (process.env.NODE_ENV !== "production") {
     NEXT_PUBLIC_POSTHOG_KEY: "disabled",
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: "disabled",
     RESEND_API_KEY: "re_local_development_only",
+    S3_URL: "http://localhost:9000",
     TURNSTILE_SECRET_KEY: "disabled",
   }
   for (const [key, value] of Object.entries(localDefaults)) {
@@ -40,8 +46,10 @@ if (process.env.NODE_ENV !== "production") {
   }
 }
 
-const [command, ...args] = process.argv.slice(2)
-if (!command) throw new Error("Usage: with-root-env <command> [...args]")
+// Next.js production builds must never inherit NODE_ENV=development from the
+// local .env file. CI already supplies production credentials; local builds
+// retain the safe development fallbacks above for validation.
+if (isBuildCommand) process.env.NODE_ENV = "production"
 
 const result = spawnSync(command, args, {
   cwd: process.cwd(),

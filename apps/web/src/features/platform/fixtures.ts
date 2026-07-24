@@ -357,6 +357,123 @@ export const seriesFixtures: Series[] = [
     tags: ["Rahatlatıcı", "Yemek"],
     cover: "/demo/covers/teahouse.svg",
   }),
+  {
+    id: "series-star-post-office",
+    slug: "yildiz-postanesi",
+    originalLanguage: "tr",
+    type: "WEBTOON",
+    status: "ONGOING",
+    contentRating: "EVERYONE",
+    publicationYear: 2026,
+    updatedAt: "2026-07-24T21:30:00.000Z",
+    publishedAt: "2026-07-24T21:30:00.000Z",
+    accentColor: "#486F91",
+    isFeatured: true,
+    isSearchable: true,
+    isIndexable: true,
+    popularity: 99,
+    localizations: {
+      tr: {
+        title: "Yıldız Postanesi",
+        shortTitle: "Yıldız Postası",
+        description:
+          "Gece vardiyasındaki genç kurye Lalin, adresi olmayan ışıklı bir mektubun peşinde bulut adaları arasında sıcacık bir yolculuğa çıkar.",
+      },
+      en: {
+        title: "The Star Post Office",
+        shortTitle: "Star Mail",
+        description:
+          "Night-shift courier Lalin follows a glowing letter with no address on a tender journey across the cloud islands.",
+      },
+    },
+    aliases: ["The Star Post Office", "Star Mail"],
+    creators: [{ name: "Novora Studio", role: "Yazar ve çizer" }],
+    genres: ["Fantastik", "Gündelik Yaşam", "Macera"],
+    tags: ["Rahatlatıcı", "Bulut adaları", "Postacılık"],
+    cover: "/api/storage/demo/yildiz-postanesi/cover.png",
+    banner: "/api/storage/demo/yildiz-postanesi/banner.jpg",
+    chapters: [1, 2, 3].map((chapterNumber) => ({
+      id: `star-post-office-chapter-${chapterNumber}`,
+      number: String(chapterNumber),
+      sortKey: chapterNumber,
+      canonicalSlug: `bolum-${chapterNumber}`,
+      localizations: {
+        tr: {
+          title:
+            chapterNumber === 1
+              ? "Adresi Olmayan Mektup"
+              : chapterNumber === 2
+                ? "Bulut Köprüsü"
+                : "Yeni Bir Takımyıldız",
+          description: `Lalin'in yıldız postası yolculuğunun ${chapterNumber}. bölümü.`,
+        },
+        en: {
+          title:
+            chapterNumber === 1
+              ? "The Letter Without an Address"
+              : chapterNumber === 2
+                ? "The Cloud Bridge"
+                : "A New Constellation",
+          description: `Chapter ${chapterNumber} of Lalin's star-mail journey.`,
+        },
+      },
+      publishedAt: `2026-07-${24 - chapterNumber}T21:30:00.000Z`,
+      releases: [
+        {
+          id: `star-post-office-ch${chapterNumber}-tr`,
+          targetLanguage: "tr",
+          sourceLanguage: "tr",
+          profileId: "profile-community",
+          revision: 1,
+          releaseGroup: "Novora Studio",
+          publishedAt: `2026-07-${24 - chapterNumber}T21:30:00.000Z`,
+          humanReviewed: true,
+          glossaryUsed: false,
+          characterMemoryUsed: false,
+          overallQualityScore: 98,
+          isCanonicalForLanguage: true,
+          isIndexable: false,
+          pages: [1, 2, 3].map((pageNumber) => {
+            const storageKey = `demo/yildiz-postanesi/chapters/${chapterNumber}/page-${pageNumber}.png`
+            return {
+              pageNumber,
+              storageKey,
+              src: `/api/storage/${storageKey}`,
+              width: 864,
+              height: 1821,
+              alt: `Yıldız Postanesi, bölüm ${chapterNumber}, sayfa ${pageNumber}`,
+            }
+          }),
+        },
+        {
+          id: `star-post-office-ch${chapterNumber}-en`,
+          targetLanguage: "en",
+          sourceLanguage: "tr",
+          profileId: "profile-community",
+          revision: 1,
+          releaseGroup: "Novora Studio",
+          publishedAt: `2026-07-${24 - chapterNumber}T21:30:00.000Z`,
+          humanReviewed: true,
+          glossaryUsed: false,
+          characterMemoryUsed: false,
+          overallQualityScore: 96,
+          isCanonicalForLanguage: true,
+          isIndexable: false,
+          pages: [1, 2, 3].map((pageNumber) => {
+            const storageKey = `demo/yildiz-postanesi/chapters/${chapterNumber}/page-${pageNumber}.png`
+            return {
+              pageNumber,
+              storageKey,
+              src: `/api/storage/${storageKey}`,
+              width: 864,
+              height: 1821,
+              alt: `The Star Post Office, chapter ${chapterNumber}, page ${pageNumber}`,
+            }
+          }),
+        },
+      ],
+    })),
+  },
 ]
 
 export const getProfile = (id: string) =>

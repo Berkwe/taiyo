@@ -17,11 +17,13 @@ export const env = createEnv({
   server: {
     BETTER_AUTH_URL: z.url(),
     BETTER_AUTH_SECRET: z.string(),
-    DISCORD_CLIENT_ID: z.string(),
-    DISCORD_CLIENT_SECRET: z.string(),
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
     TURNSTILE_SECRET_KEY: z.string(),
+    BOOTSTRAP_ADMIN_EMAIL: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.email().optional(),
+    ),
   },
 
   /**

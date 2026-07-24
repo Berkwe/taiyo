@@ -60,7 +60,7 @@ export type ChapterScalarFieldEnum = z.infer<typeof ChapterScalarFieldEnumSchema
 
 // File: SeriesScalarFieldEnum.schema.ts
 
-export const SeriesScalarFieldEnumSchema = z.enum(['id', 'slug', 'originalLanguage', 'type', 'status', 'contentRating', 'publicationYear', 'defaultAccentColor', 'isFeatured', 'isSearchable', 'isIndexable', 'publishedAt', 'deletedAt', 'createdAt', 'updatedAt'])
+export const SeriesScalarFieldEnumSchema = z.enum(['id', 'slug', 'originalLanguage', 'type', 'status', 'contentRating', 'publicationYear', 'coverStorageKey', 'bannerStorageKey', 'defaultAccentColor', 'isFeatured', 'isSearchable', 'isIndexable', 'publishedAt', 'deletedAt', 'createdAt', 'updatedAt'])
 
 export type SeriesScalarFieldEnum = z.infer<typeof SeriesScalarFieldEnumSchema>;
 
@@ -150,13 +150,13 @@ export type ReleaseGroupScalarFieldEnum = z.infer<typeof ReleaseGroupScalarField
 
 // File: ChapterReleaseScalarFieldEnum.schema.ts
 
-export const ChapterReleaseScalarFieldEnumSchema = z.enum(['id', 'targetLanguage', 'sourceLanguage', 'revision', 'status', 'publishedAt', 'humanReviewed', 'glossaryUsed', 'characterMemoryUsed', 'translationQualityScore', 'ocrQualityScore', 'cleanupQualityScore', 'overallQualityScore', 'internalEngineName', 'internalEngineVersion', 'pageCount', 'storagePrefix', 'isCanonicalForLanguage', 'isPublic', 'isIndexable', 'createdAt', 'updatedAt', 'chapterId', 'translationProfileId', 'releaseGroupId'])
+export const ChapterReleaseScalarFieldEnumSchema = z.enum(['id', 'targetLanguage', 'sourceLanguage', 'revision', 'status', 'publishedAt', 'humanReviewed', 'glossaryUsed', 'characterMemoryUsed', 'translationQualityScore', 'ocrQualityScore', 'cleanupQualityScore', 'overallQualityScore', 'internalEngineName', 'internalEngineVersion', 'pageCount', 'storagePrefix', 'isCanonicalForLanguage', 'isPublic', 'isIndexable', 'deletedAt', 'createdAt', 'updatedAt', 'chapterId', 'translationProfileId', 'releaseGroupId'])
 
 export type ChapterReleaseScalarFieldEnum = z.infer<typeof ChapterReleaseScalarFieldEnumSchema>;
 
 // File: ReleasePageScalarFieldEnum.schema.ts
 
-export const ReleasePageScalarFieldEnumSchema = z.enum(['id', 'pageNumber', 'assetUrl', 'width', 'height', 'blurData', 'mimeType', 'fileSize', 'checksum', 'createdAt', 'releaseId'])
+export const ReleasePageScalarFieldEnumSchema = z.enum(['id', 'pageNumber', 'storageKey', 'width', 'height', 'blurData', 'mimeType', 'fileSize', 'checksum', 'createdAt', 'releaseId'])
 
 export type ReleasePageScalarFieldEnum = z.infer<typeof ReleasePageScalarFieldEnumSchema>;
 
@@ -165,6 +165,36 @@ export type ReleasePageScalarFieldEnum = z.infer<typeof ReleasePageScalarFieldEn
 export const ReadingProgressRecordScalarFieldEnumSchema = z.enum(['id', 'userId', 'chapterId', 'pageNumber', 'scrollRatio', 'updatedAt', 'completedAt', 'releaseId'])
 
 export type ReadingProgressRecordScalarFieldEnum = z.infer<typeof ReadingProgressRecordScalarFieldEnumSchema>;
+
+// File: ContentReportScalarFieldEnum.schema.ts
+
+export const ContentReportScalarFieldEnumSchema = z.enum(['id', 'type', 'status', 'reasons', 'description', 'attachmentStorageKey', 'metadata', 'createdAt', 'updatedAt', 'adminNote', 'resolvedAt', 'userId', 'releaseId', 'assignedToId'])
+
+export type ContentReportScalarFieldEnum = z.infer<typeof ContentReportScalarFieldEnumSchema>;
+
+// File: SeriesFollowScalarFieldEnum.schema.ts
+
+export const SeriesFollowScalarFieldEnumSchema = z.enum(['id', 'createdAt', 'updatedAt', 'lastSeenReleaseAt', 'userId', 'seriesId'])
+
+export type SeriesFollowScalarFieldEnum = z.infer<typeof SeriesFollowScalarFieldEnumSchema>;
+
+// File: NotificationPreferenceScalarFieldEnum.schema.ts
+
+export const NotificationPreferenceScalarFieldEnumSchema = z.enum(['followedSeriesUpdates', 'reportStatusUpdates', 'accountUpdates', 'updatedAt', 'userId'])
+
+export type NotificationPreferenceScalarFieldEnum = z.infer<typeof NotificationPreferenceScalarFieldEnumSchema>;
+
+// File: SiteNotificationScalarFieldEnum.schema.ts
+
+export const SiteNotificationScalarFieldEnumSchema = z.enum(['id', 'type', 'title', 'message', 'href', 'dedupeKey', 'readAt', 'createdAt', 'userId', 'seriesId', 'releaseId', 'reportId'])
+
+export type SiteNotificationScalarFieldEnum = z.infer<typeof SiteNotificationScalarFieldEnumSchema>;
+
+// File: ContentRevisionScalarFieldEnum.schema.ts
+
+export const ContentRevisionScalarFieldEnumSchema = z.enum(['id', 'entityType', 'entityId', 'action', 'before', 'after', 'createdAt', 'actorId'])
+
+export type ContentRevisionScalarFieldEnum = z.infer<typeof ContentRevisionScalarFieldEnumSchema>;
 
 // File: SlugRedirectScalarFieldEnum.schema.ts
 
@@ -225,6 +255,12 @@ export type VerificationScalarFieldEnum = z.infer<typeof VerificationScalarField
 export const SortOrderSchema = z.enum(['asc', 'desc'])
 
 export type SortOrder = z.infer<typeof SortOrderSchema>;
+
+// File: NullableJsonNullValueInput.schema.ts
+
+export const NullableJsonNullValueInputSchema = z.enum(['DbNull', 'JsonNull'])
+
+export type NullableJsonNullValueInput = z.infer<typeof NullableJsonNullValueInputSchema>;
 
 // File: JsonNullValueInput.schema.ts
 
@@ -352,6 +388,36 @@ export const ReleaseStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'A
 
 export type ReleaseStatus = z.infer<typeof ReleaseStatusSchema>;
 
+// File: ReportType.schema.ts
+
+export const ReportTypeSchema = z.enum(['CHAPTER', 'PANEL'])
+
+export type ReportType = z.infer<typeof ReportTypeSchema>;
+
+// File: ReportStatus.schema.ts
+
+export const ReportStatusSchema = z.enum(['OPEN', 'REVIEWING', 'RESOLVED', 'REJECTED'])
+
+export type ReportStatus = z.infer<typeof ReportStatusSchema>;
+
+// File: SiteNotificationType.schema.ts
+
+export const SiteNotificationTypeSchema = z.enum(['FOLLOWED_SERIES_RELEASE', 'REPORT_STATUS', 'ACCOUNT_UPDATE'])
+
+export type SiteNotificationType = z.infer<typeof SiteNotificationTypeSchema>;
+
+// File: RevisionEntityType.schema.ts
+
+export const RevisionEntityTypeSchema = z.enum(['SERIES', 'CHAPTER', 'RELEASE', 'REPORT', 'USER'])
+
+export type RevisionEntityType = z.infer<typeof RevisionEntityTypeSchema>;
+
+// File: RevisionAction.schema.ts
+
+export const RevisionActionSchema = z.enum(['CREATE', 'UPDATE', 'DELETE', 'PUBLISH', 'BULK_UPDATE'])
+
+export type RevisionAction = z.infer<typeof RevisionActionSchema>;
+
 // File: SlugEntityType.schema.ts
 
 export const SlugEntityTypeSchema = z.enum(['SERIES', 'CHAPTER', 'GENRE', 'CREATOR'])
@@ -372,7 +438,7 @@ export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 
 // File: Roles.schema.ts
 
-export const RolesSchema = z.enum(['USER', 'MODERATOR', 'UPLOADER_INTERN', 'UPLOADER', 'ADMIN'])
+export const RolesSchema = z.enum(['USER', 'UPLOADER', 'EDITOR', 'ADMIN'])
 
 export type Roles = z.infer<typeof RolesSchema>;
 
@@ -557,6 +623,8 @@ export const SeriesSchema = z.object({
   status: SeriesStatusSchema,
   contentRating: PlatformContentRatingSchema.default("TEEN"),
   publicationYear: z.number().int().nullish(),
+  coverStorageKey: z.string().nullish(),
+  bannerStorageKey: z.string().nullish(),
   defaultAccentColor: z.string().nullish(),
   isFeatured: z.boolean(),
   isSearchable: z.boolean().default(true),
@@ -784,6 +852,7 @@ export const ChapterReleaseSchema = z.object({
   isCanonicalForLanguage: z.boolean(),
   isPublic: z.boolean(),
   isIndexable: z.boolean(),
+  deletedAt: z.date().nullish(),
   createdAt: z.date(),
   updatedAt: z.date(),
   chapterId: z.string(),
@@ -799,7 +868,7 @@ export type ChapterReleaseType = z.infer<typeof ChapterReleaseSchema>;
 export const ReleasePageSchema = z.object({
   id: z.string(),
   pageNumber: z.number().int(),
-  assetUrl: z.string(),
+  storageKey: z.string(),
   width: z.number().int(),
   height: z.number().int(),
   blurData: z.string().nullish(),
@@ -827,6 +896,90 @@ export const ReadingProgressRecordSchema = z.object({
 });
 
 export type ReadingProgressRecordType = z.infer<typeof ReadingProgressRecordSchema>;
+
+
+// File: ContentReport.schema.ts
+
+export const ContentReportSchema = z.object({
+  id: z.string(),
+  type: ReportTypeSchema,
+  status: ReportStatusSchema.default("OPEN"),
+  reasons: z.array(z.string()),
+  description: z.string().nullish(),
+  attachmentStorageKey: z.string().nullish(),
+  metadata: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10").nullish(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  adminNote: z.string().nullish(),
+  resolvedAt: z.date().nullish(),
+  userId: z.string(),
+  releaseId: z.string(),
+  assignedToId: z.string().nullish(),
+});
+
+export type ContentReportType = z.infer<typeof ContentReportSchema>;
+
+
+// File: SeriesFollow.schema.ts
+
+export const SeriesFollowSchema = z.object({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  lastSeenReleaseAt: z.date().nullish(),
+  userId: z.string(),
+  seriesId: z.string(),
+});
+
+export type SeriesFollowType = z.infer<typeof SeriesFollowSchema>;
+
+
+// File: NotificationPreference.schema.ts
+
+export const NotificationPreferenceSchema = z.object({
+  followedSeriesUpdates: z.boolean().default(true),
+  reportStatusUpdates: z.boolean().default(true),
+  accountUpdates: z.boolean().default(true),
+  updatedAt: z.date(),
+  userId: z.string(),
+});
+
+export type NotificationPreferenceType = z.infer<typeof NotificationPreferenceSchema>;
+
+
+// File: SiteNotification.schema.ts
+
+export const SiteNotificationSchema = z.object({
+  id: z.string(),
+  type: SiteNotificationTypeSchema,
+  title: z.string(),
+  message: z.string(),
+  href: z.string().nullish(),
+  dedupeKey: z.string(),
+  readAt: z.date().nullish(),
+  createdAt: z.date(),
+  userId: z.string(),
+  seriesId: z.string().nullish(),
+  releaseId: z.string().nullish(),
+  reportId: z.string().nullish(),
+});
+
+export type SiteNotificationModel = z.infer<typeof SiteNotificationSchema>;
+
+// File: ContentRevision.schema.ts
+
+export const ContentRevisionSchema = z.object({
+  id: z.string(),
+  entityType: RevisionEntityTypeSchema,
+  entityId: z.string(),
+  action: RevisionActionSchema,
+  before: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10").nullish(),
+  after: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10").nullish(),
+  createdAt: z.date(),
+  actorId: z.string(),
+});
+
+export type ContentRevisionType = z.infer<typeof ContentRevisionSchema>;
 
 
 // File: SlugRedirect.schema.ts

@@ -11,7 +11,12 @@ export default function ErrorPage({
 }) {
   return (
     <main className="py-16 content-shell" id="main-content">
-      <ErrorState message={error.message || "Beklenmeyen bir hata oluştu."} />
+      <ErrorState message="Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin." />
+      {error.digest ? (
+        <p className="mt-2 text-nv-muted-foreground text-xs">
+          Hata kodu: {error.digest}
+        </p>
+      ) : null}
       <button
         className="mt-4 min-h-11 bg-nv-primary px-5 font-semibold text-nv-primary-foreground"
         onClick={reset}

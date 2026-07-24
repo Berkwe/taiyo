@@ -6,6 +6,8 @@ model Series {
   status             SeriesStatus
   contentRating      PlatformContentRating @default(TEEN)
   publicationYear    Int?
+  coverStorageKey    String?
+  bannerStorageKey   String?
   defaultAccentColor String?
   isFeatured         Boolean               @default(false)
   isSearchable       Boolean               @default(true)
@@ -21,6 +23,8 @@ model Series {
   genres        SeriesGenre[]
   tags          SeriesTag[]
   chapters      PlatformChapter[]
+  followers     SeriesFollow[]
+  notifications SiteNotification[]
 
   @@index([status, isSearchable, deletedAt])
   @@index([isFeatured, publishedAt])
@@ -231,6 +235,7 @@ model ChapterRelease {
   isCanonicalForLanguage  Boolean       @default(false)
   isPublic                Boolean       @default(false)
   isIndexable             Boolean       @default(false)
+  deletedAt               DateTime?
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
 
@@ -242,15 +247,18 @@ model ChapterRelease {
   releaseGroupId       String?                 @db.Uuid
   pages                ReleasePage[]
   readingProgress      ReadingProgressRecord[]
+  reports              ContentReport[]
+  notifications        SiteNotification[]
 
   @@unique([chapterId, targetLanguage, translationProfileId, revision], map: "ChapterRelease_chapterId_targetLanguage_translationProfileId_re")
   @@index([chapterId, targetLanguage, isPublic, publishedAt], map: "ChapterRelease_chapterId_targetLanguage_isPublic_publishedAt_id")
+  @@index([deletedAt, status])
 }
 
 model ReleasePage {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pageNumber Int
-  assetUrl   String
+  storageKey String
   width      Int
   height     Int
   blurData   String?
@@ -276,9 +284,100 @@ model ReadingProgressRecord {
 
   release   ChapterRelease @relation(fields: [releaseId], references: [id], onDelete: Cascade)
   releaseId String         @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, releaseId])
   @@index([userId, updatedAt])
+}
+
+model ContentReport {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type                 ReportType
+  status               ReportStatus @default(OPEN)
+  reasons              String[]
+  description          String?
+  attachmentStorageKey String?
+  metadata             Json?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  adminNote            String?
+  resolvedAt           DateTime?
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String             @db.Uuid
+  release       ChapterRelease     @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  releaseId     String             @db.Uuid
+  assignedTo    User?              @relation("AssignedReports", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedToId  String?            @db.Uuid
+  notifications SiteNotification[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([releaseId, createdAt])
+}
+
+model SeriesFollow {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastSeenReleaseAt DateTime?
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String @db.Uuid
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId String @db.Uuid
+
+  @@unique([userId, seriesId])
+  @@index([seriesId, createdAt])
+  @@index([userId, updatedAt])
+}
+
+model NotificationPreference {
+  followedSeriesUpdates Boolean  @default(true)
+  reportStatusUpdates   Boolean  @default(true)
+  accountUpdates        Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @id @db.Uuid
+}
+
+model SiteNotification {
+  id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      SiteNotificationType
+  title     String
+  message   String
+  href      String?
+  dedupeKey String               @unique
+  readAt    DateTime?
+  createdAt DateTime             @default(now())
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String          @db.Uuid
+  series    Series?         @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId  String?         @db.Uuid
+  release   ChapterRelease? @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  releaseId String?         @db.Uuid
+  report    ContentReport?  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String?         @db.Uuid
+
+  @@index([userId, readAt, createdAt])
+}
+
+model ContentRevision {
+  id         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityType RevisionEntityType
+  entityId   String             @db.Uuid
+  action     RevisionAction
+  before     Json?
+  after      Json?
+  createdAt  DateTime           @default(now())
+
+  actor   User   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  actorId String @db.Uuid
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 model SlugRedirect {
@@ -352,4 +451,38 @@ enum SlugEntityType {
   CHAPTER
   GENRE
   CREATOR
+}
+
+enum ReportType {
+  CHAPTER
+  PANEL
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+
+enum SiteNotificationType {
+  FOLLOWED_SERIES_RELEASE
+  REPORT_STATUS
+  ACCOUNT_UPDATE
+}
+
+enum RevisionEntityType {
+  SERIES
+  CHAPTER
+  RELEASE
+  REPORT
+  USER
+}
+
+enum RevisionAction {
+  CREATE
+  UPDATE
+  DELETE
+  PUBLISH
+  BULK_UPDATE
 }

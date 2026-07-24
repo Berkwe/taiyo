@@ -4,9 +4,17 @@
     "home": "Ana sayfa",
     "dashboard": "Panel",
     "settings": "Ayarlar",
+    "or": "veya",
     "back": "Geri",
+    "email": "E-posta",
+    "username": "Kullanıcı adı",
+    "password": "Parola",
+    "confirmPassword": "Parolayı doğrula",
+    "rememberMe": "Beni hatırla",
     "backHome": "Ana sayfaya dön",
+    "signOut": "Çıkış yap",
     "guest": "Misafir",
+    "myProfile": "Profilim",
     "chapter": "Bölüm",
     "latestReleases": "Son eklenen bölümler",
     "latestMedias": "Yeni seriler",
@@ -20,6 +28,107 @@
       "title": "Dil",
       "tr": "Türkçe",
       "en": "English"
+    }
+  },
+  "auth": {
+    "google": "Google ile devam et",
+    "discord": "Discord ile devam et",
+    "magicLink": "Tek kullanımlık bağlantıyla devam et",
+    "email": "E-posta ile devam et",
+    "username": "Kullanıcı adıyla devam et",
+    "signUp": {
+      "title": "Kayıt ol",
+      "action": "Giriş sayfasına git",
+      "error": "Hesabınız oluşturulurken beklenmeyen bir hata oluştu"
+    },
+    "signIn": {
+      "title": "Giriş yap",
+      "action": "Kayıt sayfasına git",
+      "success": "Tekrar hoş geldin, {username}!",
+      "error": "Giriş yapılırken beklenmeyen bir hata oluştu"
+    },
+    "forgotPassword": {
+      "title": "Parolanı mı unuttun?",
+      "description": "E-posta adresini gir; parola yenileme adımlarını sana gönderelim.",
+      "action": "Yenileme e-postası gönder",
+      "error": "Yenileme e-postası gönderilirken beklenmeyen bir hata oluştu"
+    },
+    "resetPassword": {
+      "title": "Parolanı yenile",
+      "description": "Son adım olarak yeni parolanı aşağıya gir.",
+      "action": "Parolayı yenile",
+      "success": "Parolan başarıyla yenilendi.",
+      "error": "Parola yenilenirken beklenmeyen bir hata oluştu",
+      "missingToken": {
+        "title": "Bağlantı kodu eksik",
+        "description": "Bu sayfayı görmemen gerekiyordu. Sorun sürerse lütfen bize bildir."
+      }
+    },
+    "magicLinkSent": {
+      "title": "Giriş bağlantısı gönderildi",
+      "description1": "Giriş bağlantısı için gelen kutunu kontrol et.",
+      "description2": "Bağlantı şimdi gönderildi veya son bir dakika içinde zaten gönderilmişti. Ulaşmadıysa bir dakika bekleyip tekrar dene."
+    },
+    "verificationEmailSent": {
+      "title": "Doğrulama e-postası gönderildi",
+      "description1": "Doğrulama bağlantısı için gelen kutunu kontrol et.",
+      "description2": "E-posta şimdi gönderildi veya son bir saat içinde zaten gönderilmişti. Ulaşmadıysa bir süre bekleyip tekrar dene."
+    },
+    "resetPasswordEmailSent": {
+      "title": "Parola yenileme e-postası gönderildi",
+      "description1": "Parola yenileme bağlantısı için gelen kutunu kontrol et.",
+      "description2": "Bu e-postayla eşleşen bir hesap varsa yenileme adımlarını alacaksın. Ulaşmadıysa birkaç dakika bekleyip tekrar dene."
+    },
+    "password": {
+      "strength": "{score, select, 0 {Bir parola gir} 1 {Zayıf parola} 2 {Orta parola} 3 {Güçlü parola} other {Bir parola gir}}. Şunları içermeli:",
+      "strengthChars": "En az 8 karakter",
+      "strengthNumbers": "En az 1 rakam",
+      "strengthLowercase": "En az 1 küçük harf",
+      "strengthUppercase": "En az 1 büyük harf",
+      "strengthSpecial": "En az 1 özel karakter"
+    },
+    "errors": {
+      "userNotFound": "Bu e-posta kayıtlı değil. Önce kayıt ol",
+      "emailAlreadyExists": "Bu e-posta zaten kullanılıyor. Parolanı unuttuysan yenile",
+      "usernameAlreadyExists": "Bu kullanıcı adı zaten kullanılıyor. Başka bir ad seç",
+      "invalidEmail": "E-posta geçersiz. Geçici bir e-posta adresi kullanmadığından emin ol",
+      "invalidUsername": "Kullanıcı adı yalnız harf, rakam, alt çizgi ve nokta içerebilir",
+      "invalidEmailOrPassword": "E-posta veya parola hatalı. Tekrar dene",
+      "invalidUsernameOrPassword": "Kullanıcı adı veya parola hatalı. Tekrar dene",
+      "emailNotVerified": "E-posta adresin doğrulanmamış. Sana yeni bir doğrulama e-postası gönderildi",
+      "verificationEmailAlreadySent": "Doğrulama e-postası için gelen kutunu kontrol et. Görünmüyorsa birkaç dakika bekleyip tekrar dene.",
+      "invalidToken": "Bağlantı kodu geçersiz veya süresi dolmuş olabilir. Yeni bir parola yenileme bağlantısı iste.",
+      "rateLimitExceeded": "Çok fazla istek gönderdin. Lütfen daha sonra tekrar dene.",
+      "accountNotLinked": {
+        "title": "Hesap bağlama kapalı",
+        "description": "Bu e-posta başka bir giriş yöntemiyle kullanılıyor. Lütfen hesabı oluştururken kullandığın yöntemle giriş yap."
+      },
+      "unknown": {
+        "title": "Bir şeyler ters gitti",
+        "description": "Sorunun nedenini belirleyemedik. Lütfen daha sonra tekrar dene; sorun sürerse bize bildir."
+      }
+    }
+  },
+  "validation": {
+    "username": {
+      "required": "Kullanıcı adı gerekli",
+      "min3Characters": "Kullanıcı adı en az 3 karakter olmalı",
+      "max30Characters": "Kullanıcı adı en fazla 30 karakter olabilir",
+      "invalidCharacters": "Kullanıcı adı geçersiz karakterler içeriyor"
+    },
+    "email": {
+      "required": "E-posta gerekli",
+      "invalid": "E-posta geçersiz",
+      "max100Characters": "E-posta en fazla 100 karakter olabilir"
+    },
+    "password": {
+      "required": "Parola gerekli",
+      "min8Character": "Parola en az 8 karakter olmalı",
+      "max50Characters": "Parola en fazla 50 karakter olabilir",
+      "atLeast1Number": "En az 1 rakam",
+      "atLeast1Uppercase": "En az 1 büyük harf",
+      "atLeast1SpecialCharacter": "En az 1 özel karakter",
+      "mismatch": "Parolalar eşleşmiyor"
     }
   },
   "notFound": {

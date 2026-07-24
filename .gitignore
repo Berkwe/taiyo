@@ -37,6 +37,11 @@ tsbuildinfo.json
 # docker
 data/
 
+# local NovoraScans object storage
+storage/*
+!storage/.gitkeep
+backups/
+
 # turbo
 .turbo
 

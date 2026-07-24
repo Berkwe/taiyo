@@ -8,6 +8,9 @@ const segments = {
     chapter: "bolum",
     read: "oku",
     genre: "tur",
+    profile: "profil",
+    about: "hakkimizda",
+    market: "market",
   },
   en: {
     discover: "discover",
@@ -16,6 +19,9 @@ const segments = {
     chapter: "chapter",
     read: "read",
     genre: "genre",
+    profile: "profile",
+    about: "about",
+    market: "market",
   },
 } as const
 
@@ -32,6 +38,9 @@ export const paths = {
     `/${locale}/${segments[locale].read}/${slug}/${chapter}/${releaseId}`,
   genre: (locale: Locale, genre: string) =>
     `/${locale}/${segments[locale].genre}/${slugify(genre)}`,
+  profile: (locale: Locale) => `/${locale}/${segments[locale].profile}`,
+  about: (locale: Locale) => `/${locale}/${segments[locale].about}`,
+  market: (locale: Locale) => `/${locale}/${segments[locale].market}`,
 }
 
 export const slugify = (value: string) =>

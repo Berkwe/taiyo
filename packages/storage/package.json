@@ -1,0 +1,26 @@
+{
+  "name": "@taiyomoe/storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cbz": "./src/cbz.ts"
+  },
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "typecheck": "tsc --noEmit",
+    "migrate:r2": "tsx src/migrate-r2.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.937.0",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@taiyomoe/typescript": "workspace:^",
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

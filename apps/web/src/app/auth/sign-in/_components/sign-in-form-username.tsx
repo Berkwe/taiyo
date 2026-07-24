@@ -9,7 +9,6 @@ import { useHandleAuthError } from "~/app/hooks/use-handle-auth-error"
 import { CheckboxField } from "~/components/fields/checkbox-field"
 import { PasswordField } from "~/components/fields/password-field"
 import { TextField } from "~/components/fields/text-field"
-import { TurnstileField } from "~/components/fields/turnstile-field"
 import { BackArrowButton } from "~/components/ui/back-arrow-button"
 import { Form } from "~/components/ui/form"
 import {
@@ -32,7 +31,6 @@ export const SignInFormUsername = () => {
       username: "",
       password: "",
       rememberMe: true,
-      turnstileToken: "",
     },
   })
 
@@ -40,10 +38,10 @@ export const SignInFormUsername = () => {
     await authClient.signIn.username({
       ...pick(values, ["username", "password", "rememberMe"]),
       fetchOptions: {
-        headers: { "x-captcha-response": values.turnstileToken },
         onSuccess: ({ data }) => {
           toast.success(t("auth.signIn.success", { username: data?.user.name }))
-          router.push("/")
+          router.push("/tr")
+          router.refresh()
         },
         onError: (error) => {
           if (
@@ -71,7 +69,11 @@ export const SignInFormUsername = () => {
           label={t("global.username")}
           placeholder="rdxx"
         />
-        <PasswordField control={form.control} name="password">
+        <PasswordField
+          autoComplete="current-password"
+          control={form.control}
+          name="password"
+        >
           <ForgotPasswordButton />
         </PasswordField>
         <CheckboxField
@@ -79,7 +81,6 @@ export const SignInFormUsername = () => {
           name="rememberMe"
           label={t("global.rememberMe")}
         />
-        <TurnstileField control={form.control} name="turnstileToken" />
         <AuthSubmitButton label="signIn.title" />
       </Form>
     </div>

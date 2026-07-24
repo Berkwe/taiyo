@@ -37,6 +37,16 @@ body {
   padding-left: env(safe-area-inset-left);
 }
 
+body:has(.reader-shell) .site-footer {
+  display: none;
+}
+
+body:has(.reader-shell) .site-header {
+  position: relative;
+  top: auto;
+  z-index: 70;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

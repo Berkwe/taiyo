@@ -1,9 +1,12 @@
+import { randomUUID } from "node:crypto"
 import { type NextRequest, NextResponse } from "next/server"
 
 export default async function proxy(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams
   const routeLocale = req.nextUrl.pathname.split("/")[1]
   const requestHeaders = new Headers(req.headers)
+  const requestId = req.headers.get("x-request-id") ?? randomUUID()
+  requestHeaders.set("x-request-id", requestId)
   if (routeLocale === "tr" || routeLocale === "en") {
     requestHeaders.set("x-novora-locale", routeLocale)
   }
@@ -25,9 +28,13 @@ export default async function proxy(req: NextRequest) {
     )
   }
 
-  return NextResponse.next({ request: { headers: requestHeaders } })
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set("x-request-id", requestId)
+  return response
 }
 
 export const config = {
-  matcher: ["/tr/:path*", "/en/:path*", "/auth/:path*", "/api/auth/error"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|opengraph-image|robots.txt|sitemap.xml).*)",
+  ],
 }

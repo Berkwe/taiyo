@@ -2,14 +2,20 @@ import type { Locale } from "./domain"
 
 export const copy = {
   tr: {
-    nav: { home: "Ana sayfa", discover: "Keşfet", search: "Ara" },
+    nav: {
+      home: "Ana sayfa",
+      discover: "Seriler",
+      about: "Hakkımızda",
+      market: "Market",
+      search: "Ara",
+    },
     hero: {
       eyebrow: "Çeviri kalitesi, görünür ve seçilebilir",
       title: "Türkçe webtoon, manga ve manhwa okumanın yeni yolu",
       description:
         "Aynı bölümü AI Ultra, AI Standart veya topluluk sürümüyle okuyun. Hangi kaliteyi seçtiğinizi bilin.",
       primary: "Serileri keşfet",
-      secondary: "Kalite profilleri",
+      secondary: "Hakkımızda",
     },
     sections: {
       latest: "Son eklenen bölümler",
@@ -51,14 +57,20 @@ export const copy = {
     common: { viewAll: "Tümünü gör", results: "sonuç" },
   },
   en: {
-    nav: { home: "Home", discover: "Discover", search: "Search" },
+    nav: {
+      home: "Home",
+      discover: "Series",
+      about: "About",
+      market: "Market",
+      search: "Search",
+    },
     hero: {
       eyebrow: "Translation quality you can see and choose",
       title: "A better way to read webtoons, manga and manhwa",
       description:
         "Read the same chapter in AI Ultra, AI Standard or Community editions. Always know which quality you selected.",
       primary: "Discover series",
-      secondary: "Quality profiles",
+      secondary: "About us",
     },
     sections: {
       latest: "Latest chapters",

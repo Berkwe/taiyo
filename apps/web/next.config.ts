@@ -5,6 +5,10 @@ import "./src/env"
 const config = {
   reactStrictMode: true,
   reactCompiler: true,
+  experimental: {
+    authInterrupts: true,
+    serverActions: { bodySizeLimit: "105mb" },
+  },
   images: {
     minimumCacheTTL: 300,
     remotePatterns: [
@@ -22,7 +26,12 @@ const config = {
   },
 
   /** Enables hot reloading for local packages without a build step */
-  transpilePackages: ["@taiyomoe/auth", "@taiyomoe/db", "@taiyomoe/utils"],
+  transpilePackages: [
+    "@taiyomoe/auth",
+    "@taiyomoe/db",
+    "@taiyomoe/storage",
+    "@taiyomoe/utils",
+  ],
 
   /** We already do typechecking as a separate task in CI */
   typescript: { ignoreBuildErrors: true },

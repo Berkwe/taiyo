@@ -1,3 +1,7 @@
+import { readFile } from "node:fs/promises"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { checksum, getStorage } from "@taiyomoe/storage"
 import { db } from "../.."
 
 const demoSeries = [
@@ -69,6 +73,234 @@ const profiles = [
     characterMemoryEnabled: false,
   },
 ] as const
+
+const starSeriesId = "019f9000-0000-7000-8000-000000000001"
+const starAssetDirectory = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "assets",
+  "yildiz-postanesi",
+)
+
+async function seedStarPostOffice(
+  communityProfileId: string,
+  releaseGroupId: string,
+) {
+  const storage = getStorage()
+  const assetFiles = {
+    cover: { source: "cover.png", mimeType: "image/png" },
+    banner: { source: "banner.jpg", mimeType: "image/jpeg" },
+    page1: { source: "page-1.png", mimeType: "image/png" },
+    page2: { source: "page-2.png", mimeType: "image/png" },
+    page3: { source: "page-3.png", mimeType: "image/png" },
+  } as const
+  const assets = new Map<string, Uint8Array>()
+  for (const [name, asset] of Object.entries(assetFiles)) {
+    const body = await readFile(join(starAssetDirectory, asset.source))
+    assets.set(name, body)
+  }
+  await storage.put("demo/yildiz-postanesi/cover.png", assets.get("cover")!, {
+    contentType: assetFiles.cover.mimeType,
+  })
+  await storage.put("demo/yildiz-postanesi/banner.jpg", assets.get("banner")!, {
+    contentType: assetFiles.banner.mimeType,
+  })
+
+  const series = await db.series.upsert({
+    where: { slug: "yildiz-postanesi" },
+    create: {
+      id: starSeriesId,
+      slug: "yildiz-postanesi",
+      originalLanguage: "tr",
+      type: "WEBTOON",
+      status: "ONGOING",
+      contentRating: "EVERYONE",
+      publicationYear: 2026,
+      coverStorageKey: "demo/yildiz-postanesi/cover.png",
+      bannerStorageKey: "demo/yildiz-postanesi/banner.jpg",
+      defaultAccentColor: "#486F91",
+      isFeatured: true,
+      isSearchable: true,
+      isIndexable: true,
+      publishedAt: new Date("2026-07-24T21:30:00.000Z"),
+    },
+    update: {
+      deletedAt: null,
+      status: "ONGOING",
+      coverStorageKey: "demo/yildiz-postanesi/cover.png",
+      bannerStorageKey: "demo/yildiz-postanesi/banner.jpg",
+      isFeatured: true,
+      isSearchable: true,
+      isIndexable: true,
+    },
+  })
+
+  for (const localization of [
+    {
+      locale: "tr" as const,
+      title: "Yıldız Postanesi",
+      shortTitle: "Yıldız Postası",
+      description:
+        "Gece vardiyasındaki genç kurye Lalin, adresi olmayan ışıklı bir mektubun peşinde bulut adaları arasında sıcacık bir yolculuğa çıkar.",
+    },
+    {
+      locale: "en" as const,
+      title: "The Star Post Office",
+      shortTitle: "Star Mail",
+      description:
+        "Night-shift courier Lalin follows a glowing letter with no address on a tender journey across the cloud islands.",
+    },
+  ]) {
+    await db.seriesLocalization.upsert({
+      where: {
+        seriesId_locale: { seriesId: series.id, locale: localization.locale },
+      },
+      create: { seriesId: series.id, ...localization },
+      update: localization,
+    })
+  }
+
+  const creator = await db.platformCreator.upsert({
+    where: { slug: "novora-studio" },
+    create: { slug: "novora-studio", name: "Novora Studio" },
+    update: { name: "Novora Studio" },
+  })
+  await db.seriesCreator.upsert({
+    where: {
+      seriesId_creatorId_role: {
+        seriesId: series.id,
+        creatorId: creator.id,
+        role: "STUDIO",
+      },
+    },
+    create: {
+      seriesId: series.id,
+      creatorId: creator.id,
+      role: "STUDIO",
+    },
+    update: {},
+  })
+
+  for (const [index, genreName] of [
+    "Fantastik",
+    "Gündelik Yaşam",
+    "Macera",
+  ].entries()) {
+    const slug = genreName
+      .toLocaleLowerCase("tr")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/ı/g, "i")
+      .replace(/[^a-z0-9]+/g, "-")
+    const genre = await db.genre.upsert({
+      where: { slug },
+      create: { slug },
+      update: {},
+    })
+    await db.genreLocalization.upsert({
+      where: { genreId_locale: { genreId: genre.id, locale: "tr" } },
+      create: { genreId: genre.id, locale: "tr", name: genreName },
+      update: { name: genreName },
+    })
+    await db.seriesGenre.upsert({
+      where: { seriesId_genreId: { seriesId: series.id, genreId: genre.id } },
+      create: { seriesId: series.id, genreId: genre.id, sortOrder: index },
+      update: { sortOrder: index },
+    })
+  }
+
+  for (const chapterNumber of [1, 2, 3]) {
+    const chapterId = `019f9000-0000-7000-8000-0000000001${String(
+      chapterNumber,
+    ).padStart(2, "0")}`
+    const chapter = await db.platformChapter.upsert({
+      where: { id: chapterId },
+      create: {
+        id: chapterId,
+        seriesId: series.id,
+        chapterNumber: String(chapterNumber),
+        canonicalSlug: `bolum-${chapterNumber}`,
+        sortKey: chapterNumber,
+      },
+      update: { deletedAt: null, sortKey: chapterNumber },
+    })
+    const chapterTitles = [
+      ["Adresi Olmayan Mektup", "The Letter Without an Address"],
+      ["Bulut Köprüsü", "The Cloud Bridge"],
+      ["Yeni Bir Takımyıldız", "A New Constellation"],
+    ][chapterNumber - 1]!
+    for (const [locale, title] of [
+      ["tr", chapterTitles[0]],
+      ["en", chapterTitles[1]],
+    ] as const) {
+      await db.chapterLocalization.upsert({
+        where: { chapterId_locale: { chapterId, locale } },
+        create: { chapterId, locale, title },
+        update: { title },
+      })
+    }
+
+    for (const [languageIndex, targetLanguage] of ["tr", "en"].entries()) {
+      const releaseId = `019f9000-0000-7000-8000-0000000002${chapterNumber}${languageIndex}`
+      const storagePrefix = `demo/yildiz-postanesi/chapters/${chapterNumber}`
+      const release = await db.chapterRelease.upsert({
+        where: { id: releaseId },
+        create: {
+          id: releaseId,
+          chapterId: chapter.id,
+          targetLanguage: targetLanguage as "tr" | "en",
+          sourceLanguage: "tr",
+          translationProfileId: communityProfileId,
+          releaseGroupId,
+          status: "PUBLISHED",
+          publishedAt: new Date("2026-07-24T21:30:00.000Z"),
+          humanReviewed: true,
+          overallQualityScore: targetLanguage === "tr" ? 98 : 96,
+          pageCount: 3,
+          storagePrefix,
+          isCanonicalForLanguage: true,
+          isPublic: true,
+          isIndexable: false,
+        },
+        update: {
+          deletedAt: null,
+          status: "PUBLISHED",
+          isPublic: true,
+          pageCount: 3,
+          storagePrefix,
+        },
+      })
+      for (const pageNumber of [1, 2, 3]) {
+        const storageKey = `${storagePrefix}/page-${pageNumber}.png`
+        const body = assets.get(`page${pageNumber}`)!
+        await storage.put(storageKey, body, { contentType: "image/png" })
+        await db.releasePage.upsert({
+          where: {
+            releaseId_pageNumber: { releaseId: release.id, pageNumber },
+          },
+          create: {
+            releaseId: release.id,
+            pageNumber,
+            storageKey,
+            width: 864,
+            height: 1821,
+            mimeType: "image/png",
+            fileSize: BigInt(body.length),
+            checksum: checksum(body),
+          },
+          update: {
+            storageKey,
+            width: 864,
+            height: 1821,
+            mimeType: "image/png",
+            fileSize: BigInt(body.length),
+            checksum: checksum(body),
+          },
+        })
+      }
+    }
+  }
+}
 
 export async function seedPlatform() {
   for (const profile of profiles) {
@@ -183,7 +415,7 @@ export async function seedPlatform() {
                   pages: {
                     create: [1, 2, 3, 4].map((pageNumber) => ({
                       pageNumber,
-                      assetUrl: `/demo/reader/page-${pageNumber}.svg`,
+                      storageKey: `demo/reader/page-${pageNumber}.svg`,
                       width: 1200,
                       height: 1800,
                       mimeType: "image/svg+xml",
@@ -231,4 +463,6 @@ export async function seedPlatform() {
       },
     })
   }
+
+  await seedStarPostOffice(profileBySlug.get("topluluk")!.id, releaseGroup.id)
 }

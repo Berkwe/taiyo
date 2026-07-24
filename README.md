@@ -13,6 +13,18 @@ technical SEO, and an additive Prisma release model.
 
 Use Node 24.11.1 and Docker:
 
+Double-click `NovoraScans.desktop`, or run the one-command launcher:
+
+```bash
+./start-local.sh
+```
+
+It installs missing dependencies, starts the required Docker services, applies
+migrations, runs the idempotent fictional seed, starts the web app, and opens
+`http://localhost:3000/tr` in the default browser.
+
+The individual commands remain available:
+
 ```bash
 cp .env.example .env
 corepack enable

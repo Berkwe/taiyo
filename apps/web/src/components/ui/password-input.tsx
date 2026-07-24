@@ -23,7 +23,6 @@ export const PasswordInput = ({ className, ...props }: Props) => {
       <Input
         className={cn("rounded-r-none border-r-0 focus:ring-0", className)}
         type={show ? "text" : "password"}
-        autoComplete="new-password"
         {...props}
       />
       <button
