@@ -8,6 +8,10 @@ import type {
   Series,
 } from "~/features/platform/domain"
 import { getProfile } from "~/features/platform/fixtures"
+import {
+  type PopupMotionState,
+  useAnimatedPresence,
+} from "~/hooks/use-animated-presence"
 import type { ReaderSelectionResult } from "./reader-selection"
 
 const reasonOptions = {
@@ -31,6 +35,7 @@ const reasonOptions = {
 export function ReaderReportDialog({
   authenticated,
   chapter,
+  motionState,
   onClose,
   onSelectFromReader,
   release,
@@ -39,6 +44,7 @@ export function ReaderReportDialog({
 }: {
   authenticated: boolean
   chapter: Chapter
+  motionState: PopupMotionState
   onClose: () => void
   onSelectFromReader: () => void
   release: ChapterRelease
@@ -53,6 +59,7 @@ export function ReaderReportDialog({
   )
   const [status, setStatus] = useState("")
   const [previewOpen, setPreviewOpen] = useState(false)
+  const previewPresence = useAnimatedPresence(previewOpen)
   const [usingReaderSelection, setUsingReaderSelection] = useState(
     Boolean(selection),
   )
@@ -144,9 +151,14 @@ export function ReaderReportDialog({
       aria-labelledby="report-title"
       aria-modal="true"
       className="fixed inset-0 z-[130] grid place-items-center overscroll-none bg-overlay p-3"
+      data-popup-backdrop
+      data-popup-motion={motionState}
       role="dialog"
     >
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto overscroll-contain border border-nv-border bg-surface p-5 shadow-2xl">
+      <div
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto overscroll-contain border border-nv-border bg-surface p-5 shadow-2xl"
+        data-popup-surface
+      >
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-bold text-xl" id="report-title">
             İçerik bildir
@@ -325,10 +337,12 @@ export function ReaderReportDialog({
           </button>
         </form>
       </div>
-      {previewOpen && preview ? (
+      {previewPresence.rendered && preview ? (
         <button
           aria-label="Büyük önizlemeyi kapat"
           className="fixed inset-0 z-[100] grid cursor-zoom-out place-items-center bg-overlay p-4"
+          data-popup-backdrop
+          data-popup-motion={previewPresence.motionState}
           onClick={() => setPreviewOpen(false)}
           type="button"
         >
@@ -336,6 +350,7 @@ export function ReaderReportDialog({
           <img
             alt="Rapor eki büyük önizlemesi"
             className="max-h-[90vh] max-w-[92vw] border border-nv-border bg-surface object-contain shadow-2xl"
+            data-popup-surface
             src={preview}
           />
         </button>

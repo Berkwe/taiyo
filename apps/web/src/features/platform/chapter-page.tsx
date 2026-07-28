@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
-import { ChapterDetail } from "~/components/platform/chapter-detail"
+import { notFound, redirect } from "next/navigation"
 import type { Locale } from "./domain"
-import { getChapter, getSeries } from "./fixtures"
+import { getChapter } from "./fixtures"
 import { paths } from "./paths"
 import { localeAlternates, metadataTitle, pageMetadata } from "./seo"
+import { getPublicSeriesBySlug } from "./server-series"
+import { selectDefaultRelease } from "./source-editions"
 
 export async function chapterMetadata({
   locale,
@@ -15,7 +16,7 @@ export async function chapterMetadata({
   slug: string
   chapterNumber: string
 }): Promise<Metadata> {
-  const series = getSeries(slug)
+  const series = await getPublicSeriesBySlug(slug)
   const chapter = series ? getChapter(series, chapterNumber) : undefined
   if (!series || !chapter) return {}
   const title = series.localizations[locale].title
@@ -40,10 +41,12 @@ export async function ChapterPage({
   expectedLocale: Locale
 }) {
   const { locale, slug, chapter: chapterNumber } = await params
-  const series = getSeries(slug)
+  const series = await getPublicSeriesBySlug(slug)
   const chapter = series ? getChapter(series, chapterNumber) : undefined
   if (locale !== expectedLocale || !series || !chapter) notFound()
-  return (
-    <ChapterDetail chapter={chapter} locale={expectedLocale} series={series} />
+  const release = selectDefaultRelease(chapter, expectedLocale)
+  if (!release) notFound()
+  return redirect(
+    paths.reader(expectedLocale, series.slug, chapter.number, release.id),
   )
 }

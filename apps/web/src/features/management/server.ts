@@ -20,9 +20,15 @@ export async function requireManagementUser(permission?: ManagementPermission) {
         emailVerified: true,
         role: debugRole,
         banned: false,
+        deletedAt: null,
       },
-      update: { name: mock.name, role: debugRole, banned: false },
-      select: { id: true, role: true, banned: true },
+      update: {
+        name: mock.name,
+        role: debugRole,
+        banned: false,
+        deletedAt: null,
+      },
+      select: { id: true, role: true, banned: true, deletedAt: true },
     })
     return { ...seedUser, role: debugRole }
   }
@@ -31,9 +37,9 @@ export async function requireManagementUser(permission?: ManagementPermission) {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, role: true, banned: true },
+    select: { id: true, role: true, banned: true, deletedAt: true },
   })
-  if (!user || user.banned) unauthorized()
+  if (!user || user.banned || user.deletedAt) unauthorized()
   if (permission && !hasPermission(user.role, permission)) forbidden()
   return user
 }

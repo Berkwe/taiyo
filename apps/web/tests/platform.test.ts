@@ -18,6 +18,13 @@ import {
   seriesSitemapEntries,
   sitemapIndexXml,
 } from "../src/features/platform/sitemap.ts"
+import {
+  activeReleaseForSource,
+  anonymousSourceLabel,
+  chapterThumbnail,
+  distinctSources,
+  selectDefaultRelease,
+} from "../src/features/platform/source-editions.ts"
 import { shouldReplaceProgress } from "../src/features/reading/merge-progress.ts"
 
 test("normalizes Turkish slugs", () => {
@@ -99,6 +106,98 @@ test("fixture domain has seven fictional series and multi-profile Turkish releas
   )
 })
 
+test("anonymizes source editions by language and never exposes platforms", () => {
+  const chapter = seriesFixtures[0]!.chapters[0]!
+  const sources = distinctSources(chapter)
+  assert.deepEqual(
+    sources
+      .filter((source) => source.sourceLanguage === "en")
+      .map((source) => anonymousSourceLabel(source, sources, "tr")),
+    ["İngilizce-1", "İngilizce-2"],
+  )
+  assert.equal(
+    anonymousSourceLabel(
+      sources.find((source) => source.sourceLanguage === "ko")!,
+      sources,
+      "tr",
+    ),
+    "Korece-1",
+  )
+  assert.doesNotMatch(JSON.stringify(chapter), /naver|webtoons?|kakao/iu)
+})
+
+test("prefers English, remembers an available source and falls back safely", () => {
+  const chapter = seriesFixtures[0]!.chapters[0]!
+  const defaultRelease = selectDefaultRelease(chapter, "tr")
+  assert.equal(defaultRelease?.source.sourceLanguage, "en")
+  const korean = distinctSources(chapter).find(
+    (source) => source.sourceLanguage === "ko",
+  )
+  assert.ok(korean)
+  assert.equal(
+    selectDefaultRelease(chapter, "tr", korean.id)?.source.id,
+    korean.id,
+  )
+  assert.equal(
+    selectDefaultRelease(chapter, "tr", "missing-source")?.source
+      .sourceLanguage,
+    "en",
+  )
+
+  const singleKorean = structuredClone(chapter)
+  singleKorean.releases = singleKorean.releases.filter(
+    (release) => release.source.sourceLanguage === "ko",
+  )
+  assert.equal(
+    selectDefaultRelease(singleKorean, "tr")?.source.sourceLanguage,
+    "ko",
+  )
+
+  const singleEnglish = structuredClone(chapter)
+  const englishSource = distinctSources(singleEnglish).find(
+    (source) => source.sourceLanguage === "en",
+  )!
+  singleEnglish.releases = singleEnglish.releases.filter(
+    (release) => release.source.id === englishSource.id,
+  )
+  assert.equal(
+    selectDefaultRelease(singleEnglish, "tr")?.source.sourceLanguage,
+    "en",
+  )
+})
+
+test("uses only active premium translation and follows thumbnail fallbacks", () => {
+  const chapter = structuredClone(seriesFixtures[0]!.chapters[0]!)
+  const premium = chapter.releases.find(
+    (release) => release.qualityTier === "premium",
+  )!
+  const balanced = {
+    ...structuredClone(premium),
+    id: "archived-balanced",
+    qualityTier: "balanced" as const,
+    isActive: false,
+  }
+  chapter.releases.push(balanced)
+  assert.equal(
+    activeReleaseForSource(chapter, premium.source.id, premium.targetLanguage)
+      ?.qualityTier,
+    "premium",
+  )
+  assert.equal(
+    chapterThumbnail(chapter, "/fallback.svg"),
+    premium.pages[0]!.src,
+  )
+  chapter.thumbnail = "/chosen-thumbnail.webp"
+  assert.equal(
+    chapterThumbnail(chapter, "/fallback.svg"),
+    "/chosen-thumbnail.webp",
+  )
+  chapter.thumbnail = undefined
+  chapter.releases = []
+  assert.equal(chapterThumbnail(chapter, "/fallback.svg"), "/fallback.svg")
+  assert.equal(chapterThumbnail(chapter), null)
+})
+
 test("star post office demo uses storage-backed pages and three chapters", () => {
   const series = seriesFixtures.find(
     (candidate) => candidate.slug === "yildiz-postanesi",
@@ -141,16 +240,18 @@ test("guest progress merge keeps completed or furthest progress idempotently", (
   assert.equal(shouldReplaceProgress(current, current), false)
 })
 
-test("sitemap index separates public series and chapter routes", () => {
+test("sitemap index separates public series and chapter routes", async () => {
   const index = sitemapIndexXml([
     "/sitemaps/series.xml",
     "/sitemaps/chapters.xml",
   ])
+  const seriesEntries = await seriesSitemapEntries()
+  const chapterEntries = await chapterSitemapEntries()
   assert.match(index, /<sitemapindex/)
-  assert.ok(seriesSitemapEntries().length > 0)
-  assert.ok(chapterSitemapEntries().length > seriesSitemapEntries().length)
+  assert.ok(seriesEntries.length > 0)
+  assert.ok(chapterEntries.length > seriesEntries.length)
   assert.ok(
-    chapterSitemapEntries().every(
+    chapterEntries.every(
       (entry) => !entry.url.includes("/oku/") && !entry.url.includes("/read/"),
     ),
   )

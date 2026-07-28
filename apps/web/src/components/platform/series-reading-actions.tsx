@@ -10,7 +10,15 @@ import type {
 } from "~/features/platform/domain"
 import { getProfile } from "~/features/platform/fixtures"
 import { paths } from "~/features/platform/paths"
-import { TranslationProfileBadge } from "./content"
+import {
+  chapterThumbnail,
+  selectDefaultRelease,
+} from "~/features/platform/source-editions"
+import {
+  ChapterReleaseMetadata,
+  ChapterTranslationTypeBadge,
+} from "./chapter-release-metadata"
+import { ChapterThumbnail } from "./chapter-thumbnail"
 import { PROGRESS_KEY_PREFIX, parseProgress } from "./continue-reading-card"
 
 function progressFor(series: Series) {
@@ -134,12 +142,9 @@ export function SeriesReadingActions({
   const firstChapter = [...series.chapters].sort(
     (left, right) => left.sortKey - right.sortKey,
   )[0]
-  const firstRelease =
-    firstChapter?.releases.find(
-      (release) =>
-        release.targetLanguage === locale && release.isCanonicalForLanguage,
-    ) ??
-    firstChapter?.releases.find((release) => release.targetLanguage === locale)
+  const firstRelease = firstChapter
+    ? selectDefaultRelease(firstChapter, locale)
+    : undefined
   const latestProgress = [...progress.entries()].sort(([, left], [, right]) =>
     right.updatedAt.localeCompare(left.updatedAt),
   )[0]
@@ -203,47 +208,66 @@ export function SeriesReadingActions({
         <ol className="mt-5 divide-y divide-nv-border border-nv-border border-y">
           {chapters.map((chapter) => {
             const chapterProgress = progress.get(chapter.number)
-            const releases = chapter.releases.filter(
-              (release) => release.targetLanguage === locale,
-            )
+            const directRelease = selectDefaultRelease(chapter, locale)
             return (
               <li
                 className={chapterProgress ? "bg-nv-primary-soft" : undefined}
                 key={chapter.id}
               >
-                <Link
-                  className="grid gap-3 py-5 hover:bg-surface md:grid-cols-[1fr_auto] md:items-center md:px-4"
-                  href={paths.chapter(locale, series.slug, chapter.number)}
-                >
-                  <span>
-                    <strong className="inline-flex items-center gap-2">
-                      {chapterProgress ? (
-                        <CheckCircle2
-                          aria-label={locale === "tr" ? "Okundu" : "Read"}
-                          className="text-nv-success"
-                          size={18}
+                <div className="flex min-w-0 gap-3 py-5 sm:gap-5 md:px-4">
+                  <ChapterThumbnail
+                    alt={`${locale === "tr" ? "Bölüm" : "Chapter"} ${chapter.number}: ${chapter.localizations[locale].title}`}
+                    src={chapterThumbnail(chapter, series.cover)}
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col justify-center">
+                    <Link
+                      className="group min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+                      href={
+                        directRelease
+                          ? paths.reader(
+                              locale,
+                              series.slug,
+                              chapter.number,
+                              directRelease.id,
+                            )
+                          : paths.chapter(locale, series.slug, chapter.number)
+                      }
+                    >
+                      <strong className="flex min-w-0 items-center gap-2">
+                        {chapterProgress ? (
+                          <CheckCircle2
+                            aria-label={locale === "tr" ? "Okundu" : "Read"}
+                            className="shrink-0 text-nv-success"
+                            size={18}
+                          />
+                        ) : null}
+                        <span className="truncate group-hover:text-nv-primary">
+                          {locale === "tr" ? "Bölüm" : "Chapter"}{" "}
+                          {chapter.number}
+                        </span>
+                      </strong>
+                      <span className="mt-2 block truncate text-base text-nv-muted-foreground">
+                        {chapter.localizations[locale].title}
+                        {chapterProgress
+                          ? ` · %${Math.round(chapterProgress.scrollRatio * 100)}`
+                          : ""}
+                      </span>
+                    </Link>
+                    <span className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <ChapterReleaseMetadata
+                        chapter={chapter}
+                        locale={locale}
+                        seriesSlug={series.slug}
+                      />
+                      {directRelease ? (
+                        <ChapterTranslationTypeBadge
+                          locale={locale}
+                          release={directRelease}
                         />
                       ) : null}
-                      {locale === "tr" ? "Bölüm" : "Chapter"} {chapter.number}
-                    </strong>
-                    <small className="mt-1 block text-nv-muted-foreground">
-                      {chapter.localizations[locale].title}
-                      {chapterProgress
-                        ? ` · %${Math.round(chapterProgress.scrollRatio * 100)}`
-                        : ""}
-                    </small>
-                  </span>
-                  <span className="flex flex-wrap gap-2">
-                    {releases.map((release) => (
-                      <TranslationProfileBadge
-                        locale={locale}
-                        profileId={release.profileId}
-                        recommended={release.isCanonicalForLanguage}
-                        key={release.id}
-                      />
-                    ))}
-                  </span>
-                </Link>
+                    </span>
+                  </div>
+                </div>
               </li>
             )
           })}

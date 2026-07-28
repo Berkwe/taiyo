@@ -7,7 +7,9 @@ import {
   ChevronDown,
   Pause,
   Play,
+  Search,
   Settings,
+  Sparkles,
   TriangleAlert,
 } from "lucide-react"
 import Image from "next/image"
@@ -18,13 +20,32 @@ import type {
   ChapterRelease,
   Locale,
   Series,
+  TranslationType,
 } from "~/features/platform/domain"
 import { getProfile } from "~/features/platform/fixtures"
 import { paths } from "~/features/platform/paths"
+import {
+  completeReaderGuide,
+  shouldStartReaderGuide,
+} from "~/features/platform/reader-guide"
+import {
+  defaultReaderShortcuts,
+  readerShortcutsChangedEvent,
+  readReaderShortcuts,
+  shortcutLabel,
+} from "~/features/platform/reader-shortcuts"
+import {
+  distinctSources,
+  qualityLabel,
+  releaseSourceLabel,
+  translationTypeLabel,
+} from "~/features/platform/source-editions"
+import { useAnimatedPresence } from "~/hooks/use-animated-presence"
 import { PROGRESS_KEY_PREFIX } from "./continue-reading-card"
 import { ReaderImage } from "./reader-image"
 import { ReaderReportDialog } from "./reader-report-dialog"
 import { ReaderSelection, type ReaderSelectionResult } from "./reader-selection"
+import { ReaderTranslationPrompt } from "./reader-translation-prompt"
 
 const autoScrollKey = "novora:reader:auto-scroll"
 const speedPixelsPerSecond = { slow: 24, normal: 48, fast: 82 } as const
@@ -55,20 +76,26 @@ export function Reader({
   authenticated,
   chapter,
   chapterOptions,
+  currentSourceTranslationHref,
   locale,
   nextHref,
   previousHref,
   release,
   series,
+  sourceSearchHref,
+  translationHref,
 }: {
   authenticated: boolean
   chapter: Chapter
   chapterOptions: Array<{ href: string; number: string }>
+  currentSourceTranslationHref: string
   locale: Locale
   nextHref?: string
   previousHref?: string
   release: ChapterRelease
   series: Series
+  sourceSearchHref: string
+  translationHref: string
 }) {
   const [pageNumber, setPageNumber] = useState(1)
   const [controlsVisible, setControlsVisible] = useState(true)
@@ -82,9 +109,49 @@ export function Reader({
   const [reportOpen, setReportOpen] = useState(false)
   const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<ReaderSelectionResult | null>(null)
+  const [translationPromptOpen, setTranslationPromptOpen] = useState(false)
+  const [missingEditionPrompt, setMissingEditionPrompt] = useState<
+    "balanced" | "premium" | "source" | null
+  >(null)
+  const [readerGuideActive, setReaderGuideActive] = useState(false)
+  const translationPromptDismissed = useRef(false)
+  const translationPromptChapter = useRef(chapter.id)
+  const readerGuideEligible = useRef(false)
+  const [readerShortcuts, setReaderShortcuts] = useState(defaultReaderShortcuts)
+  const settingsPresence = useAnimatedPresence(settingsOpen)
+  const reportPresence = useAnimatedPresence(reportOpen)
+  const translationPromptPresence = useAnimatedPresence(
+    translationPromptOpen,
+    240,
+  )
   const progressKey = `${PROGRESS_KEY_PREFIX}${series.slug}:${chapter.number}`
   const profile = getProfile(release.profileId)
   const profileSlug = profile?.slug ?? release.profileId
+  const availableSources = distinctSources(chapter)
+  const availableReleases = chapter.releases.filter(
+    (candidate) => candidate.isActive && candidate.targetLanguage === locale,
+  )
+  const releaseFor = (sourceId: string, qualityTier?: "balanced" | "premium") =>
+    availableReleases
+      .filter(
+        (candidate) =>
+          candidate.source.id === sourceId &&
+          (!qualityTier || candidate.qualityTier === qualityTier),
+      )
+      .sort((left, right) => right.revision - left.revision)[0]
+  const releaseForType = (translationType: TranslationType) =>
+    availableReleases
+      .filter(
+        (candidate) =>
+          candidate.source.id === release.source.id &&
+          candidate.translationType === translationType,
+      )
+      .sort(
+        (left, right) =>
+          Number(right.qualityTier === "premium") -
+            Number(left.qualityTier === "premium") ||
+          right.revision - left.revision,
+      )[0]
   const autoFrame = useRef(0)
   const nextChapterTrigger = useRef<HTMLElement>(null)
   const changingChapter = useRef(false)
@@ -140,6 +207,40 @@ export function Reader({
         setSpeed(setting.speed)
     } catch {
       // Invalid preferences fall back to normal.
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      readerGuideEligible.current = shouldStartReaderGuide(
+        localStorage,
+        progressKey,
+        PROGRESS_KEY_PREFIX,
+      )
+    } catch {
+      readerGuideEligible.current = false
+    }
+  }, [progressKey])
+
+  useEffect(() => {
+    if (
+      scrollRatio < 0.05 ||
+      !readerGuideEligible.current ||
+      readerGuideActive
+    ) {
+      return
+    }
+    setReaderGuideActive(true)
+  }, [readerGuideActive, scrollRatio])
+
+  useEffect(() => {
+    const update = () => setReaderShortcuts(readReaderShortcuts())
+    update()
+    window.addEventListener("storage", update)
+    window.addEventListener(readerShortcutsChangedEvent, update)
+    return () => {
+      window.removeEventListener("storage", update)
+      window.removeEventListener(readerShortcutsChangedEvent, update)
     }
   }, [])
 
@@ -245,24 +346,44 @@ export function Reader({
   ])
 
   useEffect(() => {
+    if (translationPromptChapter.current === chapter.id) return
+    translationPromptChapter.current = chapter.id
+    translationPromptDismissed.current = false
+    setTranslationPromptOpen(false)
+  }, [chapter.id])
+
+  useEffect(() => {
+    if (
+      nextHref ||
+      scrollRatio < 0.95 ||
+      translationPromptOpen ||
+      translationPromptDismissed.current
+    ) {
+      return
+    }
+    setTranslationPromptOpen(true)
+  }, [nextHref, scrollRatio, translationPromptOpen])
+
+  useEffect(() => {
     if (!autoScroll) {
       cancelAnimationFrame(autoFrame.current)
       return
     }
     disarmChapterPull()
     let previous = performance.now()
+    let position = window.scrollY
     const tick = (now: number) => {
       const delta = Math.min(50, now - previous)
       previous = now
-      window.scrollBy({
-        top:
-          (speedPixelsPerSecond[speed] * (scrollDistance / 50) * delta) / 1_000,
+      position +=
+        (speedPixelsPerSecond[speed] * (scrollDistance / 50) * delta) / 1_000
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight
+      window.scrollTo({
+        top: Math.min(position, maxScroll),
         behavior: "instant",
       })
-      if (
-        window.scrollY + window.innerHeight >=
-        document.documentElement.scrollHeight - 2
-      ) {
+      if (position >= maxScroll - 2) {
         setAutoScroll(false)
         return
       }
@@ -389,6 +510,26 @@ export function Reader({
         setSelecting(false)
       }
       if (blocksManualChapterPull(event.target)) return
+      const desktopReader = window.matchMedia(
+        "(min-width: 1024px) and (pointer: fine)",
+      ).matches
+      if (
+        desktopReader &&
+        [readerShortcuts.scrollDown, readerShortcuts.scrollUp].includes(
+          event.code,
+        )
+      ) {
+        event.preventDefault()
+        setAutoScroll(false)
+        window.scrollBy({
+          top:
+            event.code === readerShortcuts.scrollDown
+              ? Math.max(140, window.innerHeight * 0.22)
+              : -Math.max(140, window.innerHeight * 0.22),
+          behavior: "smooth",
+        })
+        return
+      }
       if (event.key === "ArrowLeft" && previousHref)
         window.location.assign(previousHref)
       if (event.key === "ArrowRight" && nextHref)
@@ -400,7 +541,7 @@ export function Reader({
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [nextHref, previousHref])
+  }, [nextHref, previousHref, readerShortcuts])
 
   const onVisible = useCallback((index: number) => setPageNumber(index + 1), [])
   const topClass =
@@ -440,31 +581,47 @@ export function Reader({
       }}
     >
       <header
-        className={`sticky top-0 z-[60] border-nv-border border-b bg-surface/95 text-foreground backdrop-blur transition-transform duration-150 ${topClass}`}
+        className={`sticky top-0 z-[70] border-nv-border border-b bg-surface/95 text-foreground backdrop-blur transition-transform duration-150 ${topClass}`}
         data-reader-controls
       >
-        <div className="grid min-h-16 grid-cols-[auto_1fr_auto] items-center gap-2 px-2 sm:px-4">
-          <div className="flex items-center">
+        <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 px-1 sm:gap-2 sm:px-4">
+          <div className="flex min-w-0 items-center">
             <Link
               aria-label={locale === "tr" ? "Seriye dön" : "Back to series"}
-              className="inline-flex size-11 items-center justify-center"
+              className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full sm:size-11 ${
+                readerGuideActive
+                  ? "bg-nv-primary-soft text-nv-primary ring-2 ring-nv-primary"
+                  : ""
+              }`}
               href={paths.series(locale, series.slug)}
             >
               <ArrowLeft aria-hidden="true" size={20} />
             </Link>
-            <Link
-              className="max-w-[45vw] truncate rounded px-1 font-semibold text-sm hover:text-nv-primary"
-              href={paths.chapter(locale, series.slug, chapter.number)}
-            >
-              {series.localizations[locale].title} /{" "}
-              {locale === "tr" ? "Bölüm" : "Chapter"} {chapter.number}
-            </Link>
+            <div className="flex min-w-0 max-w-[38vw] items-center gap-1 truncate px-1 font-semibold text-sm sm:max-w-[45vw]">
+              <Link
+                className="truncate rounded hover:text-nv-primary"
+                href={paths.series(locale, series.slug)}
+              >
+                {series.localizations[locale].title}
+              </Link>
+              <span aria-hidden="true">/</span>
+              <Link
+                className="shrink-0 rounded hover:text-nv-primary"
+                href={paths.reader(
+                  locale,
+                  series.slug,
+                  chapter.number,
+                  release.id,
+                )}
+              >
+                {locale === "tr" ? "Bölüm" : "Chapter"} {chapter.number}
+              </Link>
+            </div>
           </div>
-          <span />
           <div className="flex items-center justify-end">
             <button
               aria-label={locale === "tr" ? "İçeriği bildir" : "Report content"}
-              className="inline-flex size-11 items-center justify-center"
+              className="inline-flex size-10 items-center justify-center sm:size-11"
               onClick={() => setReportOpen(true)}
               type="button"
             >
@@ -472,7 +629,7 @@ export function Reader({
             </button>
             <button
               aria-label="Otomatik kaydırmayı başlat veya duraklat"
-              className="inline-flex size-11 items-center justify-center"
+              className="inline-flex size-10 items-center justify-center sm:size-11"
               onClick={() => {
                 setAutoScroll((value) => !value)
               }}
@@ -485,7 +642,7 @@ export function Reader({
               aria-label={
                 locale === "tr" ? "Okuyucu ayarları" : "Reader settings"
               }
-              className="inline-flex size-11 items-center justify-center"
+              className="inline-flex size-10 items-center justify-center sm:size-11"
               onClick={() => setSettingsOpen((value) => !value)}
               type="button"
             >
@@ -502,9 +659,212 @@ export function Reader({
           aria-valuenow={pageNumber}
           style={{ width: `${(pageNumber / release.pages.length) * 100}%` }}
         />
-        {settingsOpen ? (
-          <aside className="ml-auto w-full max-w-sm border-nv-border border-t bg-surface p-4 shadow-xl">
-            <label className="grid gap-2 text-sm">
+        {settingsPresence.rendered ? (
+          <aside
+            className="ml-auto max-h-[calc(100vh-5rem)] w-full max-w-sm overflow-y-auto border-nv-border border-t bg-surface p-4 shadow-xl"
+            data-popup-motion={settingsPresence.motionState}
+          >
+            <section
+              className={`rounded-2xl border p-4 ${
+                readerGuideActive
+                  ? "border-nv-primary bg-nv-primary-soft shadow-lg"
+                  : "border-nv-border bg-background"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  {readerGuideActive ? (
+                    <p className="font-semibold text-nv-primary text-xs uppercase tracking-[.14em]">
+                      Rehber · İlk bölümün
+                    </p>
+                  ) : null}
+                  <h2 className="mt-1 flex items-center gap-2 font-bold">
+                    <Sparkles aria-hidden="true" size={17} />
+                    AI çeviri kaynağı ve kalitesi
+                  </h2>
+                  <p className="mt-1 text-nv-muted-foreground text-xs">
+                    Okurken farklı bir yayın varsa buradan doğrudan
+                    değiştirebilirsin.
+                  </p>
+                </div>
+                {readerGuideActive ? (
+                  <button
+                    className="shrink-0 rounded-full border border-nv-border bg-surface px-3 py-1.5 font-semibold text-xs"
+                    onClick={() => {
+                      try {
+                        completeReaderGuide(localStorage, "translation-choices")
+                      } catch {
+                        // Storage-disabled browsers dismiss for this session.
+                      }
+                      readerGuideEligible.current = false
+                      setReaderGuideActive(false)
+                    }}
+                    type="button"
+                  >
+                    Anladım
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mt-4">
+                <p className="font-semibold text-xs">Kaynak</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {availableSources.map((source) => {
+                    const target = releaseFor(source.id)
+                    const label = target
+                      ? releaseSourceLabel(chapter, target, locale)
+                      : (source.displayLabel ?? source.sourceLanguage)
+                    return target && target.id !== release.id ? (
+                      <Link
+                        className="rounded-full border border-nv-border bg-surface px-3 py-2 font-semibold text-xs hover:border-nv-primary"
+                        href={paths.reader(
+                          locale,
+                          series.slug,
+                          chapter.number,
+                          target.id,
+                        )}
+                        key={source.id}
+                      >
+                        {label}
+                      </Link>
+                    ) : (
+                      <button
+                        aria-pressed={source.id === release.source.id}
+                        className="rounded-full border border-nv-border bg-surface px-3 py-2 font-semibold text-xs aria-pressed:border-nv-primary aria-pressed:bg-nv-primary-soft"
+                        key={source.id}
+                        onClick={() => {
+                          if (!target) setMissingEditionPrompt("source")
+                        }}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                  <button
+                    className="inline-flex items-center gap-1 rounded-full border border-nv-border border-dashed px-3 py-2 font-semibold text-nv-muted-foreground text-xs opacity-70"
+                    onClick={() => setMissingEditionPrompt("source")}
+                    type="button"
+                  >
+                    <Search aria-hidden="true" size={14} />
+                    Başka kaynak
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="font-semibold text-xs">Çeviri türü</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {(["ai", "human", "unknown"] as const).map((type) => {
+                    const target = releaseForType(type)
+                    const current = release.translationType === type
+                    const label = translationTypeLabel(type, locale)
+                    return target && !current ? (
+                      <Link
+                        className="rounded-xl border border-nv-border bg-surface px-2 py-2 text-center font-semibold text-xs hover:border-nv-primary"
+                        href={paths.reader(
+                          locale,
+                          series.slug,
+                          chapter.number,
+                          target.id,
+                        )}
+                        key={type}
+                      >
+                        {label}
+                      </Link>
+                    ) : (
+                      <button
+                        aria-pressed={current}
+                        className={`rounded-xl border border-nv-border bg-surface px-2 py-2 font-semibold text-xs aria-pressed:border-nv-primary aria-pressed:bg-nv-primary-soft ${
+                          target ? "" : "text-nv-muted-foreground opacity-55"
+                        }`}
+                        disabled={!target}
+                        key={type}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {release.translationType === "ai" ? (
+                <div className="mt-4">
+                  <p className="font-semibold text-xs">AI çeviri kalitesi</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {(["balanced", "premium"] as const).map((tier) => {
+                      const target = releaseFor(release.source.id, tier)
+                      const current = release.qualityTier === tier
+                      const label = qualityLabel(tier, locale)
+                      return target && !current ? (
+                        <Link
+                          className="rounded-xl border border-nv-border bg-surface px-3 py-2 text-center font-semibold text-xs hover:border-nv-primary"
+                          href={paths.reader(
+                            locale,
+                            series.slug,
+                            chapter.number,
+                            target.id,
+                          )}
+                          key={tier}
+                        >
+                          {label}
+                        </Link>
+                      ) : (
+                        <button
+                          aria-pressed={current}
+                          className={`rounded-xl border border-nv-border bg-surface px-3 py-2 font-semibold text-xs aria-pressed:border-nv-primary aria-pressed:bg-nv-primary-soft ${
+                            target ? "" : "text-nv-muted-foreground opacity-55"
+                          }`}
+                          key={tier}
+                          onClick={() => {
+                            if (!target) setMissingEditionPrompt(tier)
+                          }}
+                          type="button"
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              {missingEditionPrompt ? (
+                <div
+                  aria-live="polite"
+                  className="mt-4 rounded-xl border border-nv-warning bg-nv-warning/10 p-3 text-sm"
+                >
+                  <p>
+                    {missingEditionPrompt === "source"
+                      ? "Bu bölüm için başka bir kaynaktan çeviri yok. Kaynaklarda aramak ister misiniz?"
+                      : "Bu bölüm için seçtiğiniz kalitede çeviri yok. Siz çevirmek ister misiniz?"}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      className="rounded-full border border-nv-border bg-surface px-3 py-2 font-semibold text-xs"
+                      onClick={() => setMissingEditionPrompt(null)}
+                      type="button"
+                    >
+                      Vazgeç
+                    </button>
+                    <Link
+                      className="rounded-full bg-nv-primary px-3 py-2 font-semibold text-nv-primary-foreground text-xs"
+                      href={
+                        missingEditionPrompt === "source"
+                          ? sourceSearchHref
+                          : `${currentSourceTranslationHref}&quality=${missingEditionPrompt}`
+                      }
+                    >
+                      {missingEditionPrompt === "source"
+                        ? "Kaynak ara"
+                        : "Çevirmek istiyorum"}
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+            <label className="mt-5 grid gap-2 text-sm">
               <span className="font-semibold">Kaydırma hızı</span>
               <select
                 className="min-h-11 border border-nv-border bg-background px-3"
@@ -551,9 +911,17 @@ export function Reader({
               </div>
             </fieldset>
             <div className="mt-5 border-nv-border border-t pt-4 text-nv-muted-foreground text-xs leading-6">
-              <strong className="text-foreground">Kısayollar</strong>
+              <strong className="text-foreground">
+                {locale === "tr" ? "Kısayollar" : "Shortcuts"}
+              </strong>
               <p>
-                Boşluk: araç çubuğu · ←/→: bölüm değiştir · Esc: pencereyi kapat
+                {shortcutLabel(readerShortcuts.scrollDown, locale)}:{" "}
+                {locale === "tr" ? "aşağı kaydır" : "scroll down"} ·{" "}
+                {shortcutLabel(readerShortcuts.scrollUp, locale)}:{" "}
+                {locale === "tr" ? "yukarı kaydır" : "scroll up"} ·{" "}
+                {locale === "tr"
+                  ? "Boşluk: araç çubuğu · ←/→: bölüm değiştir · Esc: pencereyi kapat"
+                  : "Space: toolbar · ←/→: change chapter · Esc: close dialog"}
               </p>
             </div>
           </aside>
@@ -562,22 +930,31 @@ export function Reader({
 
       <div className="mx-auto py-4">
         <section className="mx-auto mb-8 grid max-w-3xl place-items-center gap-4 px-5 pt-6 text-center text-reader-foreground">
-          <Image
-            alt={`${series.localizations[locale].title} kapağı`}
-            className="aspect-[2/3] w-32 rounded-lg border border-nv-border object-cover shadow-xl sm:w-40"
-            height={240}
-            priority
-            src={series.cover}
-            width={160}
-          />
+          <Link
+            aria-label={`${series.localizations[locale].title} ${
+              locale === "tr" ? "seri sayfasına git" : "go to series page"
+            }`}
+            href={paths.series(locale, series.slug)}
+          >
+            <Image
+              alt={`${series.localizations[locale].title} kapağı`}
+              className="aspect-[2/3] w-32 rounded-lg border border-nv-border object-cover shadow-xl sm:w-40"
+              height={240}
+              priority
+              src={series.cover}
+              width={160}
+            />
+          </Link>
           <div>
             <p className="text-nv-muted-foreground text-sm">
-              {profile?.labels[locale]} · {release.overallQualityScore}/100
+              {release.targetLanguage.toLocaleUpperCase("en")} ·{" "}
+              {releaseSourceLabel(chapter, release, locale)} ·{" "}
+              {qualityLabel(release.qualityTier, locale)}
             </p>
             <h1 className="mt-2 font-bold text-2xl">
               <Link
                 className="hover:text-nv-primary"
-                href={paths.chapter(locale, series.slug, chapter.number)}
+                href={paths.series(locale, series.slug)}
               >
                 {series.localizations[locale].title}
               </Link>
@@ -690,7 +1067,7 @@ export function Reader({
         </section>
       </div>
 
-      {controlsVisible && !selecting ? (
+      {controlsVisible && !selecting && !settingsOpen ? (
         <label
           className="-translate-y-1/2 fixed top-1/2 left-2 z-[60] flex flex-col items-center gap-2 rounded-full border border-nv-border bg-surface/95 px-2 py-3 text-xs"
           data-reader-controls
@@ -699,6 +1076,7 @@ export function Reader({
           <input
             aria-label="Okuma ilerlemesi"
             className="h-44 cursor-ns-resize touch-none accent-nv-primary [writing-mode:vertical-lr]"
+            data-reader-progress
             max="1000"
             min="0"
             onChange={(event) => {
@@ -806,10 +1184,12 @@ export function Reader({
         <ArrowUp aria-hidden="true" size={22} />
       </button>
 
-      {reportOpen ? (
+      {reportPresence.rendered ? (
         <ReaderReportDialog
           authenticated={authenticated}
           chapter={chapter}
+          key={selection?.previewUrl ?? "report-without-selection"}
+          motionState={reportPresence.motionState}
           onClose={() => setReportOpen(false)}
           onSelectFromReader={() => {
             setReportOpen(false)
@@ -819,6 +1199,18 @@ export function Reader({
           release={release}
           selection={selection}
           series={series}
+        />
+      ) : null}
+      {translationPromptPresence.rendered ? (
+        <ReaderTranslationPrompt
+          controlsVisible={controlsVisible && !selecting}
+          href={translationHref}
+          motionState={translationPromptPresence.motionState}
+          onClose={() => {
+            translationPromptDismissed.current = true
+            setTranslationPromptOpen(false)
+          }}
+          seriesTitle={series.localizations[locale].title}
         />
       ) : null}
       {selecting ? (

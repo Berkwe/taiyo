@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
               take: 1,
               include: {
                 releases: {
-                  where: { deletedAt: null, isPublic: true },
+                  where: {
+                    deletedAt: null,
+                    isActive: true,
+                    isPublic: true,
+                  },
                   orderBy: { publishedAt: "desc" },
                   take: 1,
                   include: {

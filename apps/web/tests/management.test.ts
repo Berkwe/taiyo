@@ -6,7 +6,9 @@ import {
   parseCbz,
 } from "../../../packages/storage/src/cbz.ts"
 import { assertStorageKey } from "../../../packages/storage/src/index.ts"
+import { isLoopbackAuthUrl } from "../src/features/debug/config.ts"
 import { hasPermission } from "../src/features/management/permissions.ts"
+import { enforceQualityActivation } from "../src/features/management/release-quality.ts"
 
 function png(width = 20, height = 30) {
   const bytes = new Uint8Array(24)
@@ -35,6 +37,14 @@ test("storage keys reject absolute and traversal paths", () => {
   assert.throws(() => assertStorageKey("/etc/passwd"))
   assert.throws(() => assertStorageKey("covers/../secret"))
   assert.throws(() => assertStorageKey("covers\\secret"))
+})
+
+test("debug viewer only accepts loopback auth origins", () => {
+  assert.equal(isLoopbackAuthUrl("http://localhost:3000"), true)
+  assert.equal(isLoopbackAuthUrl("http://127.0.0.1:3000"), true)
+  assert.equal(isLoopbackAuthUrl("http://[::1]:3000"), true)
+  assert.equal(isLoopbackAuthUrl("https://staging.example.com"), false)
+  assert.equal(isLoopbackAuthUrl("not-a-url"), false)
 })
 
 test("CBZ images are naturally ordered and inspected", () => {
@@ -68,5 +78,42 @@ test("natural ordering handles decimal page names", () => {
   assert.deepEqual(
     ["page-10.jpg", "page-2.jpg", "page-1.jpg"].sort(naturalImageSort),
     ["page-1.jpg", "page-2.jpg", "page-10.jpg"],
+  )
+})
+
+test("premium activation archives balanced and blocks balanced rollback", async () => {
+  let archived = false
+  await enforceQualityActivation(
+    {
+      id: "premium",
+      sourceId: "source",
+      targetLanguage: "tr",
+      qualityTier: "PREMIUM",
+    },
+    {
+      archiveOtherActive: async () => {
+        archived = true
+      },
+      hasOtherActivePremium: async () => false,
+    },
+  )
+  assert.equal(archived, true)
+
+  await assert.rejects(
+    enforceQualityActivation(
+      {
+        id: "balanced",
+        sourceId: "source",
+        targetLanguage: "tr",
+        qualityTier: "BALANCED",
+      },
+      {
+        archiveOtherActive: async () => {
+          throw new Error("Dengeli sürüm arşivleme yapmamalı.")
+        },
+        hasOtherActivePremium: async () => true,
+      },
+    ),
+    /Premium sürüm zaten etkin/u,
   )
 })

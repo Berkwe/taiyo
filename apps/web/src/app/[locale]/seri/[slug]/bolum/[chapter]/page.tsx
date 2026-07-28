@@ -19,10 +19,10 @@ export async function generateMetadata({
   return chapterMetadata({ locale: "tr", slug, chapterNumber: chapter })
 }
 
-export default function Page({
+export default async function Page({
   params,
 }: {
   params: Promise<{ locale: string; slug: string; chapter: string }>
 }) {
-  return <ChapterPage expectedLocale="tr" params={params} />
+  return ChapterPage({ expectedLocale: "tr", params })
 }

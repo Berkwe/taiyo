@@ -19,6 +19,7 @@ export async function resolveRelease(input: {
   return db.chapterRelease.findFirst({
     where: {
       deletedAt: null,
+      isActive: true,
       isPublic: true,
       targetLanguage: input.targetLanguage,
       translationProfile: { slug: input.profileSlug },
