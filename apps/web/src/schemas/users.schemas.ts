@@ -25,20 +25,11 @@ export const signUpSchema = z
     }
   })
 
-export const signInMagicLinkSchema = z.object({
-  email: emailSchema,
-  turnstileToken: z.string().nonempty(),
-})
-
 export const signInEmailSchema = z.object({
   email: emailSchema,
   password: z.string().nonempty(zodMessages.password.required),
   rememberMe: z.boolean().default(true),
 })
-
-export const signInUsernameSchema = signInEmailSchema
-  .omit({ email: true })
-  .extend({ username: z.string().nonempty(zodMessages.username.required) })
 
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
@@ -61,8 +52,6 @@ export const resetPasswordSchema = z
   })
 
 export type SignUpInput = z.infer<typeof signUpSchema>
-export type SignInMagicLinkInput = z.infer<typeof signInMagicLinkSchema>
 export type SignInEmailInput = z.infer<typeof signInEmailSchema>
-export type SignInUsernameInput = z.infer<typeof signInUsernameSchema>
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

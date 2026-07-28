@@ -38,11 +38,17 @@
     "username": "Kullanıcı adıyla devam et",
     "signUp": {
       "title": "Kayıt ol",
+      "description": "Kalıcı e-posta adresin ve güçlü bir parolayla NovoraScans hesabını oluştur.",
+      "hasAccount": "Zaten hesabın var mı?",
+      "signIn": "Giriş yap",
       "action": "Giriş sayfasına git",
       "error": "Hesabınız oluşturulurken beklenmeyen bir hata oluştu"
     },
     "signIn": {
       "title": "Giriş yap",
+      "description": "E-posta adresin ve parolanla güvenli şekilde devam et.",
+      "noAccount": "Henüz hesabın yok mu?",
+      "createAccount": "Hesap oluştur",
       "action": "Kayıt sayfasına git",
       "success": "Tekrar hoş geldin, {username}!",
       "error": "Giriş yapılırken beklenmeyen bir hata oluştu"
@@ -97,6 +103,7 @@
       "invalidUsernameOrPassword": "Kullanıcı adı veya parola hatalı. Tekrar dene",
       "emailNotVerified": "E-posta adresin doğrulanmamış. Sana yeni bir doğrulama e-postası gönderildi",
       "verificationEmailAlreadySent": "Doğrulama e-postası için gelen kutunu kontrol et. Görünmüyorsa birkaç dakika bekleyip tekrar dene.",
+      "emailDeliveryFailed": "E-posta gönderilemedi. SMTP ayarlarını kontrol edip tekrar dene.",
       "invalidToken": "Bağlantı kodu geçersiz veya süresi dolmuş olabilir. Yeni bir parola yenileme bağlantısı iste.",
       "rateLimitExceeded": "Çok fazla istek gönderdin. Lütfen daha sonra tekrar dene.",
       "accountNotLinked": {
@@ -119,7 +126,8 @@
     "email": {
       "required": "E-posta gerekli",
       "invalid": "E-posta geçersiz",
-      "max100Characters": "E-posta en fazla 100 karakter olabilir"
+      "max100Characters": "E-posta en fazla 100 karakter olabilir",
+      "unsupportedProvider": "Gmail, Outlook, Proton Mail, iCloud veya Yahoo gibi desteklenen kalıcı bir e-posta sağlayıcısı kullan"
     },
     "password": {
       "required": "Parola gerekli",

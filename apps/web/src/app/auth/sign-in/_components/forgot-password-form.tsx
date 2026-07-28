@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { authClient } from "@taiyomoe/auth/client"
 import { useTranslations } from "next-intl"
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { AuthSubmitButton } from "~/app/auth/_components/auth-submit-button"
 import { useHandleAuthError } from "~/app/hooks/use-handle-auth-error"
@@ -15,17 +16,30 @@ import {
 import { useAuthStore } from "~/stores/auth-flow.store"
 
 export const ForgotPasswordForm = () => {
-  const { goToStep, goToSocials } = useAuthStore()
+  const forgotPasswordEmail = useAuthStore((state) => state.forgotPasswordEmail)
+  const goToForm = useAuthStore((state) => state.goToForm)
+  const goToStep = useAuthStore((state) => state.goToStep)
+  const setForgotPasswordEmail = useAuthStore(
+    (state) => state.setForgotPasswordEmail,
+  )
   const { handleError } = useHandleAuthError()
   const t = useTranslations("auth.forgotPassword")
   const form = useForm({
     resolver: zodResolver(forgotPasswordSchema),
     mode: "onTouched",
     defaultValues: {
-      email: "",
+      email: forgotPasswordEmail,
       turnstileToken: "",
     },
   })
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      setForgotPasswordEmail(values.email ?? "")
+    })
+
+    return () => subscription.unsubscribe()
+  }, [form, setForgotPasswordEmail])
 
   const handlePress = async (values: ForgotPasswordInput) => {
     await authClient.requestPasswordReset({
@@ -41,7 +55,7 @@ export const ForgotPasswordForm = () => {
 
   return (
     <div className="space-y-8">
-      <BackArrowButton onClick={goToSocials} />
+      <BackArrowButton onClick={goToForm} />
       <div className="space-y-2">
         <h1 className="font-bold text-2xl">{t("title")}</h1>
         <p className="text-sm text-subtle">{t("description")}</p>

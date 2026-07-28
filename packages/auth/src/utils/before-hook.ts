@@ -1,5 +1,6 @@
 import { cacheClient } from "@taiyomoe/cache"
 import { db } from "@taiyomoe/db"
+import { isAllowedEmailDomain, normalizeUsername } from "@taiyomoe/utils"
 import { APIError, createAuthMiddleware } from "better-auth/api"
 import { DateTime } from "luxon"
 
@@ -15,17 +16,44 @@ const throwInvalidCredsError = (isEmail: boolean) => {
 }
 
 export const beforeHook = createAuthMiddleware(async (ctx) => {
+  const submittedEmail =
+    typeof ctx.body?.email === "string"
+      ? ctx.body.email
+      : typeof ctx.body?.newEmail === "string"
+        ? ctx.body.newEmail
+        : null
+
+  if (submittedEmail && !isAllowedEmailDomain(submittedEmail)) {
+    throw new APIError("BAD_REQUEST", {
+      code: "UNSUPPORTED_EMAIL_PROVIDER",
+      message: "Use a supported permanent email provider",
+    })
+  }
+
+  if (ctx.path === "/sign-up/email" && typeof ctx.body?.username === "string") {
+    const username = normalizeUsername(ctx.body.username)
+    const existingUser = await db.user.findFirst({
+      where: { username },
+      select: { id: true },
+    })
+
+    if (existingUser) {
+      throw new APIError("UNPROCESSABLE_ENTITY", {
+        code: "USERNAME_IS_ALREADY_TAKEN",
+        message: "Username is already taken",
+      })
+    }
+  }
+
   /**
-   * Before signing-in with email or username, we need to check 2 things:
+   * Before signing in with email, we need to check 2 things:
    *
-   * 1. If the user is trying to sign in using an email or username from a non-credential provider
+   * 1. If the user is trying to sign in with an address owned by Google OAuth
    * 2. If the user is trying to sign in to an account that is not verified and which has a pending verification email
    */
-  if (ctx.path === "/sign-in/email" || ctx.path === "/sign-in/username") {
+  if (ctx.path === "/sign-in/email") {
     const user = await db.user.findFirst({
-      where: ctx.body.email
-        ? { email: ctx.body.email }
-        : { username: ctx.body.username },
+      where: { email: ctx.body.email },
     })
 
     if (!user) {
@@ -36,7 +64,7 @@ export const beforeHook = createAuthMiddleware(async (ctx) => {
 
     // Tried logging in with an email or username from a non-credential provider
     if (!accounts.some((a) => a.providerId === "credential")) {
-      throwInvalidCredsError(ctx.body.email !== undefined)
+      throwInvalidCredsError(true)
     }
 
     const account = accounts.find((a) => a.providerId === "credential")!
@@ -46,7 +74,7 @@ export const beforeHook = createAuthMiddleware(async (ctx) => {
     })
 
     if (!isCorrectPassword) {
-      throwInvalidCredsError(ctx.body.email !== undefined)
+      throwInvalidCredsError(true)
     }
 
     if (user.emailVerified) {

@@ -18,11 +18,16 @@ export const TurnstileField = <
   className?: string
 }) => {
   const { field } = useController(props)
+  const siteKey =
+    process.env.NODE_ENV !== "production" &&
+    env.NEXT_PUBLIC_TURNSTILE_SITE_KEY === "disabled"
+      ? "1x00000000000000000000AA"
+      : env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   return (
     <Turnstile
       className={cn("min-h-20", className)}
-      siteKey={env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      siteKey={siteKey}
       onSuccess={(token) => field.onChange(token)}
       options={{ size: "flexible" }}
     />

@@ -14,6 +14,7 @@ export default async function proxy(req: NextRequest) {
   // User trying to access auth-related routes while logged in
   if (
     req.nextUrl.pathname.startsWith("/auth/") &&
+    searchParams.get("add") !== "1" &&
     (await (await import("~/utils/get-session")).getSession())
   ) {
     return NextResponse.redirect(new URL("/", req.url))

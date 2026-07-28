@@ -10,7 +10,6 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { PasswordField } from "~/components/fields/password-field"
 import { Form } from "~/components/ui/form"
-import { GradientButton } from "~/components/ui/gradient-button"
 import { SubmitButton } from "~/components/ui/submit-button"
 import {
   type ResetPasswordInput,
@@ -67,11 +66,9 @@ export const ResetPasswordForm = ({ token }: Props) => {
           name="confirmPassword"
           label={t("global.confirmPassword")}
         />
-        <SubmitButton asChild>
-          <GradientButton className="mt-6 hover:[&_svg]:translate-x-1">
-            {t("auth.resetPassword.action")}
-            <ArrowRightIcon />
-          </GradientButton>
+        <SubmitButton className="mt-6 hover:[&_svg]:translate-x-1">
+          {t("auth.resetPassword.action")}
+          <ArrowRightIcon />
         </SubmitButton>
       </Form>
     </div>

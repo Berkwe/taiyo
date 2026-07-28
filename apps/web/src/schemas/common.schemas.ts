@@ -1,3 +1,4 @@
+import { isAllowedEmailDomain } from "@taiyomoe/utils"
 import { z } from "zod"
 import { zodMessages } from "~/utils/zod-messages"
 
@@ -6,6 +7,7 @@ export const emailSchema = z
   .nonempty(zodMessages.email.required)
   .email(zodMessages.email.invalid)
   .max(100, zodMessages.email.max100Characters)
+  .refine(isAllowedEmailDomain, zodMessages.email.unsupportedProvider)
 
 export const passwordSchema = z
   .string()

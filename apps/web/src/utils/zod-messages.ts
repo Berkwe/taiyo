@@ -11,6 +11,7 @@ export const zodMessages = {
     required: "validation.email.required",
     invalid: "validation.email.invalid",
     max100Characters: "validation.email.max100Characters",
+    unsupportedProvider: "validation.email.unsupportedProvider",
   },
   password: {
     required: "validation.password.required",

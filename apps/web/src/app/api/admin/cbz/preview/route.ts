@@ -1,13 +1,18 @@
 import { parseCbz } from "@taiyomoe/storage/cbz"
 import { type NextRequest, NextResponse } from "next/server"
 import { requireManagementUser } from "~/features/management/server"
-import { rejectCrossOriginWrite } from "~/utils/api-security"
+import {
+  rejectCrossOriginWrite,
+  rejectOversizedBody,
+} from "~/utils/api-security"
 
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   const rejected = rejectCrossOriginWrite(request)
   if (rejected) return rejected
+  const oversized = rejectOversizedBody(request, 100 * 1024 * 1024)
+  if (oversized) return oversized
   await requireManagementUser("chapter:write")
   try {
     const formData = await request.formData()

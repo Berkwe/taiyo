@@ -25,10 +25,12 @@ export const CheckboxField = <
     {...props}
     render={({ field }) => (
       <FormItem className={className}>
-        <FormControl>
-          <Checkbox id={field.name} checked={field.value} {...field} />
+        <div className="flex items-center gap-2">
+          <FormControl>
+            <Checkbox id={field.name} checked={field.value} {...field} />
+          </FormControl>
           <Label htmlFor={field.name}>{label}</Label>
-        </FormControl>
+        </div>
         <FormMessage />
       </FormItem>
     )}

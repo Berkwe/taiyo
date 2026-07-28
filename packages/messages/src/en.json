@@ -71,7 +71,8 @@
     "email": {
       "required": "The email is required",
       "invalid": "The email is invalid",
-      "max100Characters": "The email must be at most 100 characters"
+      "max100Characters": "The email must be at most 100 characters",
+      "unsupportedProvider": "Use a supported permanent email provider such as Gmail, Outlook, Proton Mail, iCloud or Yahoo"
     },
     "password": {
       "required": "The password is required",
@@ -100,11 +101,17 @@
     "username": "Continue with username",
     "signUp": {
       "title": "Sign Up",
+      "description": "Create your NovoraScans account with a permanent email address and a strong password.",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
       "action": "Go to sign in",
       "error": "An unexpected error occurred when creating your account"
     },
     "signIn": {
       "title": "Sign In",
+      "description": "Continue securely with your email address and password.",
+      "noAccount": "Don't have an account yet?",
+      "createAccount": "Create account",
       "action": "Go to sign up",
       "success": "Welcome back, {username}!",
       "error": "An unexpected error occurred when signing in"
@@ -159,6 +166,7 @@
       "invalidUsernameOrPassword": "Your username or password is incorrect. Please try again",
       "emailNotVerified": "Your email is not verified. An email has been sent to you for verification",
       "verificationEmailAlreadySent": "Please check your inbox for a verification email. If you don't see it, please wait a few minutes and try again.",
+      "emailDeliveryFailed": "The email could not be sent. Check the SMTP settings and try again.",
       "invalidToken": "The token is invalid. Maybe it has expired. Please try requesting a new password reset link.",
       "rateLimitExceeded": "You have made too many requests. Please try again later.",
       "accountNotLinked": {

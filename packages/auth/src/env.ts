@@ -16,6 +16,16 @@ export const env = createEnv({
    */
   server: {
     BETTER_AUTH_URL: z.url(),
+    BETTER_AUTH_TRUSTED_ORIGINS: z.preprocess(
+      (value) =>
+        typeof value === "string"
+          ? value
+              .split(",")
+              .map((origin) => origin.trim())
+              .filter(Boolean)
+          : [],
+      z.array(z.url()),
+    ),
     BETTER_AUTH_SECRET: z.string(),
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),

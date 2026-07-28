@@ -3,12 +3,14 @@ import {
   Container,
   Heading,
   Html,
-  Img,
   Preview,
   Section,
   Tailwind,
   Text,
 } from "@react-email/components"
+import React from "react"
+
+void React
 
 type Props = {
   name: string
@@ -32,44 +34,32 @@ const ResetPasswordEmail = ({ name, url }: Props) => (
       },
     }}
   >
-    <Html lang="en" className="bg-subtle">
-      <Preview>Reset your password on Taiyō</Preview>
-      <Section className="mt-[32px]">
-        <Img
-          src="https://cdn.taiyo.moe/assets/logo.png"
-          width={96}
-          alt="Taiyō"
-          className="mx-auto my-0"
-        />
-      </Section>
+    <Html lang="tr" className="bg-subtle">
+      <Preview>NovoraScans parolanı sıfırla</Preview>
       <Heading className="mx-0 my-4 p-0 text-center font-semibold text-[24px] text-black">
-        Taiyō
+        NovoraScans
       </Heading>
       <Container className="my-12 rounded-lg border border-subtle border-solid bg-default">
         <Container className="px-8 py-4">
-          <Text className="font-bold text-2xl">Reset your password</Text>
+          <Text className="font-bold text-2xl">Parolanı sıfırla</Text>
           <Text>
-            Hi {name}, we received a request to reset your password. Please
-            click the button below to reset it. This link will be valid for 1
-            hour.
+            Merhaba {name}, parolanı sıfırlama isteği aldık. Yeni parolanı
+            belirlemek için aşağıdaki bağlantıyı kullan. Bağlantı bir saat
+            boyunca geçerlidir.
           </Text>
           <Section>
             <Button
               href={url}
               className="rounded-md bg-brand px-3 py-1.5 text-sm text-white"
             >
-              Click here
+              Parolamı sıfırla
             </Button>
           </Section>
-          <Text>
-            If the button does not work, copy and paste the link below into your
-            browser: {url}
-          </Text>
+          <Text>Düğme çalışmazsa bu bağlantıyı tarayıcına kopyala: {url}</Text>
         </Container>
         <Container className="border-subtle border-t border-solid px-8">
           <Text>
-            If you did not request this email, please ignore it as nothing will
-            be changed.
+            Bu isteği sen göndermediysen e-postayı yok say; parolan değişmez.
           </Text>
         </Container>
       </Container>

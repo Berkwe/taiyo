@@ -3,7 +3,10 @@ import { db } from "@taiyomoe/db"
 import { getStorage } from "@taiyomoe/storage"
 import { parseImage } from "@taiyomoe/storage/cbz"
 import { type NextRequest, NextResponse } from "next/server"
-import { rejectCrossOriginWrite } from "~/utils/api-security"
+import {
+  rejectCrossOriginWrite,
+  rejectOversizedBody,
+} from "~/utils/api-security"
 import { getSession } from "~/utils/get-session"
 
 export const runtime = "nodejs"
@@ -19,6 +22,8 @@ function previousAvatarKey(image: string | null | undefined) {
 export async function POST(request: NextRequest) {
   const rejected = rejectCrossOriginWrite(request)
   if (rejected) return rejected
+  const oversized = rejectOversizedBody(request, maximumBytes)
+  if (oversized) return oversized
   const session = await getSession()
   if (!session?.user) {
     return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 })

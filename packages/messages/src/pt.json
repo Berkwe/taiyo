@@ -71,7 +71,8 @@
     "email": {
       "required": "O email é obrigatório",
       "invalid": "O email é inválido",
-      "max100Characters": "O email deve conter no máximo 100 caracteres"
+      "max100Characters": "O email deve conter no máximo 100 caracteres",
+      "unsupportedProvider": "Use um provedor de email permanente compatível, como Gmail, Outlook, Proton Mail, iCloud ou Yahoo"
     },
     "password": {
       "required": "A senha é obrigatória",
@@ -100,11 +101,17 @@
     "username": "Continuar com nome de usuário",
     "signUp": {
       "title": "Cadastrar",
+      "description": "Crie sua conta NovoraScans com um email permanente e uma senha forte.",
+      "hasAccount": "Já tem uma conta?",
+      "signIn": "Entrar",
       "action": "Ir para o login",
       "error": "Ocorreu um erro inesperado ao criar sua conta"
     },
     "signIn": {
       "title": "Entrar",
+      "description": "Continue com segurança usando seu email e senha.",
+      "noAccount": "Ainda não tem uma conta?",
+      "createAccount": "Criar conta",
       "action": "Ir para o cadastro",
       "success": "Bem-vindo de volta, {username}!",
       "error": "Ocorreu um erro inesperado ao logar"
@@ -154,6 +161,7 @@
       "invalidUsernameOrPassword": "Seu nome de usuário ou senha estão incorretos. Por favor, tente novamente",
       "emailNotVerified": "Seu email não foi verificado. Um email de verificação foi enviado novamente",
       "verificationEmailAlreadySent": "Por favor, verifique sua caixa de entrada para um email de verificação. Se não vir, por favor, aguarde alguns minutos e tente novamente.",
+      "emailDeliveryFailed": "Não foi possível enviar o email. Verifique as configurações SMTP e tente novamente.",
       "invalidToken": "O token é inválido. Talvez tenha expirado. Por favor, tente solicitar um novo link de redefinição de senha.",
       "rateLimitExceeded": "Você fez muitas solicitações. Por favor, tente novamente mais tarde.",
       "accountNotLinked": {

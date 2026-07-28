@@ -12,22 +12,26 @@ import {
   admin,
   captcha,
   customSession,
-  magicLink,
-  username,
+  multiSession,
 } from "better-auth/plugins"
-import { emailHarmony } from "better-auth-harmony"
+import { z } from "zod"
 import { env } from "./env"
 import { afterHook } from "./utils/after-hook"
 import { afterSessionCreatedHook } from "./utils/after-session-created-hook"
-import { afterUserCreatedHook } from "./utils/after-user-created-hook"
 import { beforeHook } from "./utils/before-hook"
 import { beforeUserCreatedHook } from "./utils/before-user-created-hook"
-import { sendMagicLink } from "./utils/send-magic-link"
 import { sendResetPassword } from "./utils/send-reset-password"
 import { sendVerificationEmail } from "./utils/send-verification-email"
 
+const turnstileSecretKey =
+  process.env.NODE_ENV !== "production" &&
+  env.TURNSTILE_SECRET_KEY === "disabled"
+    ? "1x0000000000000000000000000000000AA"
+    : env.TURNSTILE_SECRET_KEY
+
 export const auth = betterAuth({
   appName: "NovoraScans",
+  trustedOrigins: [env.BETTER_AUTH_URL, ...env.BETTER_AUTH_TRUSTED_ORIGINS],
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
@@ -38,13 +42,39 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendOnSignUp: true,
+    sendOnSignIn: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail,
   },
   account: { accountLinking: { enabled: false } },
   user: {
     changeEmail: { enabled: true },
-    additionalFields: { settings: { fieldName: "settings", type: "string" } },
+    additionalFields: {
+      username: {
+        type: "string",
+        required: false,
+        input: true,
+        validator: {
+          input: z
+            .string()
+            .min(USERNAME_MIN_LENGTH)
+            .max(USERNAME_MAX_LENGTH)
+            .regex(USERNAME_REGEX),
+        },
+      },
+      displayUsername: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+      normalizedEmail: {
+        type: "string",
+        required: false,
+        input: false,
+        returned: false,
+      },
+      settings: { fieldName: "settings", type: "string" },
+    },
   },
   socialProviders: {
     google: {
@@ -62,8 +92,6 @@ export const auth = betterAuth({
     storage: "secondary-storage",
     customRules: {
       "/sign-in/email": { window: 60, max: 3 },
-      "/sign-in/username": { window: 60, max: 3 },
-      "/sign-in/magic-link": { window: 60, max: 1 },
       "/sign-up": { window: 120, max: 1 },
       "/forget-password": { window: 120, max: 1 },
     },
@@ -75,22 +103,15 @@ export const auth = betterAuth({
     user: {
       create: {
         before: beforeUserCreatedHook,
-        after: afterUserCreatedHook,
       },
     },
     session: { create: { after: afterSessionCreatedHook } },
   },
   plugins: [
-    username({
-      minUsernameLength: USERNAME_MIN_LENGTH,
-      maxUsernameLength: USERNAME_MAX_LENGTH,
-      usernameValidator: (input) => USERNAME_REGEX.test(input),
-    }),
-    emailHarmony(),
-    magicLink({ disableSignUp: true, sendMagicLink }),
+    multiSession({ maximumSessions: 5 }),
     captcha({
       provider: "cloudflare-turnstile",
-      secretKey: env.TURNSTILE_SECRET_KEY,
+      secretKey: turnstileSecretKey,
       endpoints: ["/sign-up", "/forget-password"],
     }),
     admin({ defaultRole: "USER" }),

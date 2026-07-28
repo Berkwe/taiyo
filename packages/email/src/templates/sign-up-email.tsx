@@ -3,12 +3,14 @@ import {
   Container,
   Heading,
   Html,
-  Img,
   Preview,
   Section,
   Tailwind,
   Text,
 } from "@react-email/components"
+import React from "react"
+
+void React
 
 type Props = {
   name: string
@@ -32,42 +34,30 @@ const SignUpEmail = ({ name, url }: Props) => (
       },
     }}
   >
-    <Html lang="en" className="bg-subtle">
-      <Preview>Verify your account on Taiyō</Preview>
-      <Section className="mt-[32px]">
-        <Img
-          src="https://cdn.taiyo.moe/assets/logo.png"
-          width={96}
-          alt="Taiyō"
-          className="mx-auto my-0"
-        />
-      </Section>
+    <Html lang="tr" className="bg-subtle">
+      <Preview>NovoraScans hesabını doğrula</Preview>
       <Heading className="mx-0 my-4 p-0 text-center font-semibold text-[24px] text-black">
-        Taiyō
+        NovoraScans
       </Heading>
       <Container className="my-12 rounded-lg border border-subtle border-solid bg-default">
         <Container className="px-8 py-4">
-          <Text className="font-bold text-2xl">Verify your email</Text>
+          <Text className="font-bold text-2xl">E-posta adresini doğrula</Text>
           <Text>
-            Hi {name}, thank you for your interest in Taiyō. We want to ensure
-            that it&apos;s really you who created your account, please click the
-            button below. This link will be valid for 1 hour.
+            Merhaba {name}, hesabını etkinleştirmek için aşağıdaki bağlantıyı
+            kullan. Bu bağlantı bir saat boyunca geçerlidir.
           </Text>
           <Section>
             <Button
               href={url}
               className="rounded-md bg-brand px-3 py-1.5 text-sm text-white"
             >
-              Click here
+              E-postamı doğrula
             </Button>
           </Section>
-          <Text>
-            If the button does not work, copy and paste the link below into your
-            browser: {url}
-          </Text>
+          <Text>Düğme çalışmazsa bu bağlantıyı tarayıcına kopyala: {url}</Text>
         </Container>
         <Container className="border-subtle border-t border-solid px-8">
-          <Text>If you did not request this email, please ignore it.</Text>
+          <Text>Bu hesabı sen oluşturmadıysan bu e-postayı yok say.</Text>
         </Container>
       </Container>
     </Html>

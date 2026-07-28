@@ -6,7 +6,10 @@ import { parseImage } from "@taiyomoe/storage/cbz"
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { currentActiveUser, resolveRelease } from "~/features/reading/server"
-import { rejectCrossOriginWrite } from "~/utils/api-security"
+import {
+  rejectCrossOriginWrite,
+  rejectOversizedBody,
+} from "~/utils/api-security"
 
 export const runtime = "nodejs"
 
@@ -58,6 +61,8 @@ function safeOriginalName(name: string) {
 export async function POST(request: NextRequest) {
   const rejected = rejectCrossOriginWrite(request)
   if (rejected) return rejected
+  const oversized = rejectOversizedBody(request, 5 * 1024 * 1024)
+  if (oversized) return oversized
   const user = await currentActiveUser()
   if (!user || user.banned) {
     return NextResponse.json(

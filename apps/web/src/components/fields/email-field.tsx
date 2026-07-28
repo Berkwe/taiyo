@@ -28,7 +28,8 @@ export const EmailField = <
           <FormLabel>{t("email")}</FormLabel>
           <FormControl>
             <Input
-              placeholder="galho-preto-pra-caralho@gmail.com"
+              autoComplete="email"
+              placeholder="ornek@gmail.com"
               type="email"
               {...field}
             />
