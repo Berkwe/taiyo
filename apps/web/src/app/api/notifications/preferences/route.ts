@@ -8,6 +8,7 @@ const schema = z.object({
   followedSeriesUpdates: z.boolean(),
   reportStatusUpdates: z.boolean(),
   accountUpdates: z.boolean(),
+  translationUpdates: z.boolean(),
 })
 
 export async function GET() {
@@ -24,6 +25,7 @@ export async function GET() {
       followedSeriesUpdates: true,
       reportStatusUpdates: true,
       accountUpdates: true,
+      translationUpdates: true,
     },
   })
 }

@@ -3,21 +3,182 @@
 import { randomUUID } from "node:crypto"
 import { cacheClient } from "@taiyomoe/cache"
 import { db } from "@taiyomoe/db"
+import { meilisearchClient } from "@taiyomoe/meilisearch"
 import { checksum, getStorage } from "@taiyomoe/storage"
 import { parseCbz, parseImage } from "@taiyomoe/storage/cbz"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { enforceQualityActivation } from "~/features/management/release-quality"
 import { validateRelease } from "~/features/management/release-validation"
 import { requireManagementUser } from "~/features/management/server"
 import {
+  accountDeletionSchema,
   accountStateSchema,
+  cbzUploadInputSchema,
   chapterInputSchema,
+  chapterSourceInputSchema,
   formObject,
   roleInputSchema,
   seriesInputSchema,
 } from "~/features/management/validation"
+import { processMandownTranslationJob } from "~/features/translation/mandown-import"
 
 const adminPath = "/admin"
+
+export async function updateMockTranslationJob(formData: FormData) {
+  const actor = await requireManagementUser("users:manage")
+  const jobId = z.string().uuid().parse(formData.get("jobId"))
+  const status = z
+    .enum(["PROCESSING", "COMPLETED", "FAILED"])
+    .parse(formData.get("status"))
+  const job = await db.translationJob.findUniqueOrThrow({
+    where: { id: jobId },
+    include: {
+      campaign: {
+        include: {
+          contributions: {
+            where: { status: "COMMITTED" },
+            select: { userId: true },
+          },
+        },
+      },
+    },
+  })
+  if (job.provider !== "mandown")
+    throw new Error("Yalnız Mandown job durumu bu ekrandan değiştirilebilir.")
+  if (job.campaign.status === "REFUNDED") {
+    throw new Error("İade edilmiş Mandown talebi yeniden çalıştırılamaz.")
+  }
+  if (status !== "FAILED") {
+    await processMandownTranslationJob(job.id, { retryProcessing: true })
+    revalidatePath(adminPath)
+    revalidatePath("/translate")
+    return
+  }
+  const campaignStatus = "FAILED"
+  await db.$transaction(async (tx) => {
+    await tx.translationJob.update({
+      where: { id: job.id },
+      data: {
+        status,
+        completedAt: null,
+        failureReason: "Admin tarafından başarısız işaretlendi",
+        payload: job.payload,
+      },
+    })
+    await tx.translationCampaign.update({
+      where: { id: job.campaignId },
+      data: {
+        status: campaignStatus,
+        completedAt: null,
+        publicAt: null,
+      },
+    })
+    for (const userId of new Set(
+      job.campaign.contributions.map((item) => item.userId),
+    )) {
+      await tx.siteNotification.upsert({
+        where: {
+          dedupeKey: `translation-job:${job.id}:${status}:${userId}`,
+        },
+        create: {
+          userId,
+          type: "TRANSLATION_CAMPAIGN",
+          title: "Çeviri işlemi başarısız",
+          message: "Desteklediğiniz çeviri talebinin durumu güncellendi.",
+          href: "/translate",
+          dedupeKey: `translation-job:${job.id}:${status}:${userId}`,
+        },
+        update: {},
+      })
+    }
+    await tx.contentRevision.create({
+      data: {
+        entityType: "TRANSLATION_CAMPAIGN",
+        entityId: job.campaignId,
+        action: "UPDATE",
+        actorId: actor.id,
+        before: { jobStatus: job.status, campaignStatus: job.campaign.status },
+        after: { jobStatus: status, campaignStatus },
+      },
+    })
+  })
+  revalidatePath(adminPath)
+  revalidatePath("/translate")
+}
+
+export async function refundTranslationCampaign(formData: FormData) {
+  const actor = await requireManagementUser("users:manage")
+  const campaignId = z.string().uuid().parse(formData.get("campaignId"))
+  const confirmation = z.string().parse(formData.get("confirmation"))
+  if (confirmation !== "IADE") throw new Error("İade onayı eşleşmiyor.")
+  const campaign = await db.translationCampaign.findUniqueOrThrow({
+    where: { id: campaignId },
+    include: { contributions: { where: { status: "COMMITTED" } } },
+  })
+  await db.$transaction(async (tx) => {
+    for (const contribution of campaign.contributions) {
+      await tx.creditAccount.upsert({
+        where: { userId: contribution.userId },
+        create: {
+          userId: contribution.userId,
+          cachedBalance: contribution.credits,
+        },
+        update: { cachedBalance: { increment: contribution.credits } },
+      })
+      await tx.creditTransaction.upsert({
+        where: {
+          idempotencyKey: `translation-refund:${contribution.id}`,
+        },
+        create: {
+          userId: contribution.userId,
+          amount: contribution.credits,
+          type: "CONTRIBUTION_REFUND",
+          referenceType: "translation_contribution",
+          referenceId: contribution.id,
+          idempotencyKey: `translation-refund:${contribution.id}`,
+        },
+        update: {},
+      })
+      await tx.translationContribution.update({
+        where: { id: contribution.id },
+        data: { status: "REFUNDED", refundedAt: new Date() },
+      })
+      await tx.siteNotification.upsert({
+        where: {
+          dedupeKey: `translation-refund:${contribution.id}:notification`,
+        },
+        create: {
+          userId: contribution.userId,
+          type: "TRANSLATION_CAMPAIGN",
+          title: "Çeviri katkısı iade edildi",
+          message: `${contribution.credits} kredi hesabınıza geri yüklendi.`,
+          href: "/translate",
+          dedupeKey: `translation-refund:${contribution.id}:notification`,
+        },
+        update: {},
+      })
+    }
+    await tx.translationCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        status: "REFUNDED",
+        chapters: { updateMany: { where: {}, data: { activeKey: null } } },
+      },
+    })
+    await tx.contentRevision.create({
+      data: {
+        entityType: "TRANSLATION_CAMPAIGN",
+        entityId: campaign.id,
+        action: "UPDATE",
+        actorId: actor.id,
+        before: { status: campaign.status },
+        after: { status: "REFUNDED" },
+      },
+    })
+  })
+  revalidatePath(adminPath)
+}
 
 function fileFrom(formData: FormData, name: string) {
   const value = formData.get(name)
@@ -40,6 +201,13 @@ async function revokeSessions(userId: string) {
   await Promise.allSettled(
     sessions.map(({ token }) => cacheClient.users.auth.invalidate(token)),
   )
+}
+
+function avatarStorageKey(image: string | null) {
+  const prefix = "/api/storage/"
+  return image?.startsWith(`${prefix}avatars/`)
+    ? image.slice(prefix.length)
+    : null
 }
 
 export async function updateUserRole(formData: FormData) {
@@ -92,6 +260,66 @@ export async function updateUserRole(formData: FormData) {
   revalidatePath(adminPath)
 }
 
+export async function addUserCredits(formData: FormData) {
+  const actor = await requireManagementUser("users:manage")
+  if (actor.role !== "ADMIN") {
+    throw new Error("Kullanıcı kredisi yalnız admin tarafından eklenebilir.")
+  }
+  const input = z
+    .object({
+      userId: z.string().uuid(),
+      credits: z.coerce.number().int().positive().max(1_000_000),
+    })
+    .parse(Object.fromEntries(formData))
+  const user = await db.user.findFirstOrThrow({
+    where: { id: input.userId, deletedAt: null },
+    select: { id: true },
+  })
+  const idempotencyKey = `admin-credit:${actor.id}:${user.id}:${randomUUID()}`
+
+  await db.$transaction(async (tx) => {
+    await tx.creditAccount.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, cachedBalance: input.credits },
+      update: { cachedBalance: { increment: input.credits } },
+    })
+    await tx.creditTransaction.create({
+      data: {
+        userId: user.id,
+        amount: input.credits,
+        type: "ADMIN_ADJUSTMENT",
+        referenceType: "admin_credit",
+        referenceId: actor.id,
+        idempotencyKey,
+        metadata: { actorId: actor.id },
+      },
+    })
+    await tx.contentRevision.create({
+      data: {
+        entityType: "USER",
+        entityId: user.id,
+        action: "UPDATE",
+        actorId: actor.id,
+        after: { creditAdjustment: input.credits },
+      },
+    })
+    await tx.siteNotification.upsert({
+      where: { dedupeKey: `${idempotencyKey}:notification` },
+      create: {
+        userId: user.id,
+        type: "ACCOUNT_UPDATE",
+        title: "Kredi bakiyeniz güncellendi",
+        message: `Hesabınıza ${input.credits} kredi eklendi.`,
+        href: "/translate",
+        dedupeKey: `${idempotencyKey}:notification`,
+      },
+      update: {},
+    })
+  })
+  revalidatePath(adminPath)
+  revalidatePath("/translate")
+}
+
 export async function updateAccountState(formData: FormData) {
   const actor = await requireManagementUser("users:manage")
   const input = accountStateSchema.parse(formObject(formData))
@@ -109,6 +337,112 @@ export async function updateAccountState(formData: FormData) {
     },
   })
   await revokeSessions(input.userId)
+  revalidatePath(adminPath)
+}
+
+export async function deleteUserAccount(formData: FormData) {
+  const actor = await requireManagementUser("users:manage")
+  const input = accountDeletionSchema.parse(formObject(formData))
+  if (actor.id === input.userId) {
+    throw new Error("Kendi hesabınızı silemezsiniz.")
+  }
+
+  const existing = await db.user.findFirstOrThrow({
+    where: { id: input.userId, deletedAt: null },
+    select: {
+      email: true,
+      id: true,
+      image: true,
+      role: true,
+      username: true,
+      sessions: { select: { token: true } },
+      contentReports: { select: { attachmentStorageKey: true } },
+    },
+  })
+  if (input.confirmation !== existing.username) {
+    throw new Error("Hesap silme onayı kullanıcı adıyla eşleşmiyor.")
+  }
+  if (
+    existing.role === "ADMIN" &&
+    (await db.user.count({
+      where: { role: "ADMIN", deletedAt: null, banned: { not: true } },
+    })) <= 1
+  ) {
+    throw new Error("Sistemdeki son etkin yönetici hesabı silinemez.")
+  }
+
+  const deletedAt = new Date()
+  const deletedUsername = `deleted_${existing.id.slice(0, 8)}_${deletedAt
+    .getTime()
+    .toString(36)}`
+
+  await db.$transaction(async (tx) => {
+    await tx.contentReport.updateMany({
+      where: { assignedToId: existing.id },
+      data: { assignedToId: null },
+    })
+    await tx.siteNotification.deleteMany({ where: { userId: existing.id } })
+    await tx.notificationPreference.deleteMany({
+      where: { userId: existing.id },
+    })
+    await tx.seriesFollow.deleteMany({ where: { userId: existing.id } })
+    await tx.readingProgressRecord.deleteMany({
+      where: { userId: existing.id },
+    })
+    await tx.userHistory.deleteMany({ where: { userId: existing.id } })
+    await tx.contentReport.deleteMany({ where: { userId: existing.id } })
+    await tx.userProfile.deleteMany({ where: { userId: existing.id } })
+    await tx.userLibrary.deleteMany({ where: { userId: existing.id } })
+    await tx.account.deleteMany({ where: { userId: existing.id } })
+    await tx.session.deleteMany({ where: { userId: existing.id } })
+    if (existing.email) {
+      await tx.verification.deleteMany({
+        where: { identifier: { contains: existing.email } },
+      })
+    }
+    await tx.user.update({
+      where: { id: existing.id },
+      data: {
+        name: "Silinmiş kullanıcı",
+        username: deletedUsername,
+        displayUsername: deletedUsername,
+        email: null,
+        normalizedEmail: null,
+        emailVerified: false,
+        image: null,
+        banned: true,
+        banReason: "ACCOUNT_DELETED",
+        banExpires: null,
+        deletedAt,
+        role: "USER",
+        settings: {},
+        followers: { set: [] },
+        following: { set: [] },
+      },
+    })
+    await tx.contentRevision.create({
+      data: {
+        entityType: "USER",
+        entityId: existing.id,
+        action: "DELETE",
+        actorId: actor.id,
+        before: { role: existing.role },
+        after: { deletedAt: deletedAt.toISOString() },
+      },
+    })
+  })
+
+  const storedFiles = [
+    avatarStorageKey(existing.image),
+    ...existing.contentReports.map((report) => report.attachmentStorageKey),
+  ].filter((key): key is string => Boolean(key))
+  await Promise.allSettled([
+    ...existing.sessions.map(({ token }) =>
+      cacheClient.users.auth.invalidate(token),
+    ),
+    meilisearchClient.users.deleteDocument(existing.id),
+    ...storedFiles.map((key) => getStorage().delete(key)),
+  ])
   revalidatePath(adminPath)
 }
 
@@ -342,17 +676,28 @@ export async function deleteChapter(formData: FormData) {
 
 export async function uploadCbz(formData: FormData) {
   const actor = await requireManagementUser("chapter:write")
-  const input = chapterInputSchema.parse(formObject(formData))
-  const series = await db.series.findUniqueOrThrow({
+  const input = cbzUploadInputSchema.parse(formObject(formData))
+  await db.series.findUniqueOrThrow({
     where: { id: input.seriesId, deletedAt: null },
-    select: { originalLanguage: true },
+    select: { id: true },
   })
+  if (input.existingChapterId) {
+    await db.platformChapter.findFirstOrThrow({
+      where: {
+        id: input.existingChapterId,
+        seriesId: input.seriesId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    })
+  }
   const file = fileFrom(formData, "cbz")
   if (!file || !file.name.toLocaleLowerCase("en").endsWith(".cbz")) {
     throw new Error("Geçerli bir .cbz dosyası seçin.")
   }
   const images = parseCbz(new Uint8Array(await file.arrayBuffer()))
-  const chapterId = randomUUID()
+  const chapterId = input.existingChapterId ?? randomUUID()
+  const sourceId = input.existingSourceId ?? randomUUID()
   const releaseId = randomUUID()
   const storagePrefix = `chapters/${chapterId}/releases/${releaseId}`
   const stored: string[] = []
@@ -383,6 +728,13 @@ export async function uploadCbz(formData: FormData) {
         checksum: checksum(image.body),
       })
     }
+    const thumbnailPage = input.thumbnailPage ?? 1
+    const thumbnailStorageKey = thumbnailPage
+      ? pages.find((page) => page.pageNumber === thumbnailPage)?.storageKey
+      : undefined
+    if (thumbnailPage && !thumbnailStorageKey) {
+      throw new Error("Seçilen thumbnail sayfası CBZ içinde bulunamadı.")
+    }
 
     await db.$transaction(async (tx) => {
       const profile = await tx.translationProfile.upsert({
@@ -398,42 +750,100 @@ export async function uploadCbz(formData: FormData) {
         },
         update: {},
       })
-      await tx.platformChapter.create({
-        data: {
-          id: chapterId,
-          seriesId: input.seriesId,
-          chapterNumber: input.chapterNumber,
-          canonicalSlug: input.canonicalSlug,
-          sortKey: input.sortKey,
-          localizations: {
-            create: { locale: "tr", title: input.title || null },
-          },
-          releases: {
-            create: {
-              id: releaseId,
-              targetLanguage: "tr",
-              sourceLanguage: series.originalLanguage,
-              translationProfileId: profile.id,
-              storagePrefix,
-              pageCount: pages.length,
-              pages: { create: pages },
+      if (!input.existingChapterId) {
+        await tx.platformChapter.create({
+          data: {
+            id: chapterId,
+            seriesId: input.seriesId,
+            chapterNumber: input.chapterNumber,
+            canonicalSlug: input.canonicalSlug,
+            sortKey: input.sortKey,
+            thumbnailStorageKey,
+            localizations: {
+              create: { locale: "tr", title: input.title || null },
             },
           },
+        })
+      } else if (thumbnailStorageKey && input.replaceThumbnail) {
+        await tx.platformChapter.update({
+          where: { id: chapterId },
+          data: { thumbnailStorageKey },
+        })
+      }
+      const selectedSource = input.existingSourceId
+        ? await tx.chapterSource.findFirstOrThrow({
+            where: {
+              id: input.existingSourceId,
+              chapterId,
+              isActive: true,
+            },
+            select: { id: true, language: true },
+          })
+        : await (async () => {
+            if (input.isDefault) {
+              await tx.chapterSource.updateMany({
+                where: { chapterId },
+                data: { isDefault: false },
+              })
+            }
+            return tx.chapterSource.create({
+              data: {
+                id: sourceId,
+                chapterId,
+                platform: input.platform,
+                language: input.sourceLanguage,
+                displayLabel: input.displayLabel,
+                description: input.sourceDescription,
+                priority: input.sourcePriority,
+                isDefault: input.isDefault,
+                sourceUrl: input.sourceUrl || null,
+                externalId: input.externalId || null,
+              },
+              select: { id: true, language: true },
+            })
+          })()
+      const latestRevision = await tx.chapterRelease.aggregate({
+        where: {
+          chapterId,
+          sourceId,
+          targetLanguage: input.targetLanguage,
+          translationProfileId: profile.id,
+        },
+        _max: { revision: true },
+      })
+      await tx.chapterRelease.create({
+        data: {
+          id: releaseId,
+          chapterId,
+          targetLanguage: input.targetLanguage,
+          sourceLanguage: selectedSource.language,
+          sourceId,
+          qualityTier: input.qualityTier,
+          pipelineVersion: input.pipelineVersion,
+          translationProfileId: profile.id,
+          revision: (latestRevision._max.revision ?? 0) + 1,
+          storagePrefix,
+          pageCount: pages.length,
+          pages: { create: pages },
         },
       })
       await tx.contentRevision.createMany({
         data: [
-          {
-            entityType: "CHAPTER",
-            entityId: chapterId,
-            action: "CREATE",
-            actorId: actor.id,
-            after: {
-              source: "CBZ",
-              chapterNumber: input.chapterNumber,
-              pageCount: pages.length,
-            },
-          },
+          ...(!input.existingChapterId
+            ? [
+                {
+                  entityType: "CHAPTER" as const,
+                  entityId: chapterId,
+                  action: "CREATE" as const,
+                  actorId: actor.id,
+                  after: {
+                    source: "CBZ",
+                    chapterNumber: input.chapterNumber,
+                    pageCount: pages.length,
+                  },
+                },
+              ]
+            : []),
           {
             entityType: "RELEASE",
             entityId: releaseId,
@@ -451,6 +861,111 @@ export async function uploadCbz(formData: FormData) {
   revalidatePath(adminPath)
 }
 
+export async function updateChapterSource(formData: FormData) {
+  const actor = await requireManagementUser("chapter:write")
+  const input = chapterSourceInputSchema.parse(formObject(formData))
+  const release = await db.chapterRelease.findUniqueOrThrow({
+    where: { id: input.releaseId, deletedAt: null },
+    select: {
+      chapterId: true,
+      isPublic: true,
+      sourceId: true,
+      status: true,
+    },
+  })
+  if (release.sourceId !== input.sourceId) {
+    throw new Error("Kaynak ve çeviri sürümü eşleşmiyor.")
+  }
+  await db.$transaction(async (tx) => {
+    if (release.isPublic && release.status === "PUBLISHED") {
+      if (input.qualityTier === "PREMIUM") {
+        await tx.chapterRelease.updateMany({
+          where: {
+            id: { not: input.releaseId },
+            sourceId: input.sourceId,
+            targetLanguage: input.targetLanguage,
+            isActive: true,
+            deletedAt: null,
+          },
+          data: {
+            isActive: false,
+            isPublic: false,
+            isIndexable: false,
+            status: "ARCHIVED",
+          },
+        })
+      } else {
+        const activePremium = await tx.chapterRelease.findFirst({
+          where: {
+            id: { not: input.releaseId },
+            sourceId: input.sourceId,
+            targetLanguage: input.targetLanguage,
+            qualityTier: "PREMIUM",
+            isActive: true,
+            isPublic: true,
+            deletedAt: null,
+          },
+          select: { id: true },
+        })
+        if (activePremium) {
+          throw new Error(
+            "Etkin Premium sürüm varken Dengeli sürüm etkinleştirilemez.",
+          )
+        }
+      }
+    }
+    if (input.isDefault) {
+      await tx.chapterSource.updateMany({
+        where: { chapterId: release.chapterId, id: { not: input.sourceId } },
+        data: { isDefault: false },
+      })
+    }
+    await tx.chapterSource.update({
+      where: { id: input.sourceId },
+      data: {
+        platform: input.platform,
+        language: input.sourceLanguage,
+        displayLabel: input.displayLabel ?? null,
+        description: input.sourceDescription,
+        priority: input.sourcePriority,
+        isDefault: input.isDefault,
+        sourceUrl: input.sourceUrl || null,
+        externalId: input.externalId || null,
+      },
+    })
+    await tx.chapterRelease.update({
+      where: { id: input.releaseId },
+      data: {
+        sourceLanguage: input.sourceLanguage,
+        targetLanguage: input.targetLanguage,
+        qualityTier: input.qualityTier,
+        pipelineVersion: input.pipelineVersion,
+      },
+    })
+    await tx.platformChapter.update({
+      where: { id: release.chapterId },
+      data: {
+        thumbnailStorageKey: input.thumbnailStorageKey || null,
+      },
+    })
+    await tx.contentRevision.create({
+      data: {
+        entityType: "RELEASE",
+        entityId: input.releaseId,
+        action: "UPDATE",
+        actorId: actor.id,
+        after: {
+          sourceId: input.sourceId,
+          targetLanguage: input.targetLanguage,
+          qualityTier: input.qualityTier,
+          pipelineVersion: input.pipelineVersion,
+        },
+      },
+    })
+  })
+  revalidatePath(adminPath)
+}
+
 export async function publishRelease(formData: FormData) {
   const actor = await requireManagementUser("content:publish")
   const id = roleInputSchema.shape.userId.parse(formData.get("id"))
@@ -465,6 +980,9 @@ export async function publishRelease(formData: FormData) {
   const release = await db.chapterRelease.findUniqueOrThrow({
     where: { id, deletedAt: null },
     select: {
+      qualityTier: true,
+      sourceId: true,
+      targetLanguage: true,
       chapter: {
         select: {
           chapterNumber: true,
@@ -482,12 +1000,50 @@ export async function publishRelease(formData: FormData) {
   })
   const publishedAt = new Date()
   await db.$transaction(async (tx) => {
+    await enforceQualityActivation(
+      { id, ...release },
+      {
+        archiveOtherActive: async () => {
+          await tx.chapterRelease.updateMany({
+            where: {
+              id: { not: id },
+              sourceId: release.sourceId!,
+              targetLanguage: release.targetLanguage,
+              isActive: true,
+              deletedAt: null,
+            },
+            data: {
+              isActive: false,
+              isPublic: false,
+              isIndexable: false,
+              status: "ARCHIVED",
+            },
+          })
+        },
+        hasOtherActivePremium: async () =>
+          Boolean(
+            await tx.chapterRelease.findFirst({
+              where: {
+                id: { not: id },
+                sourceId: release.sourceId!,
+                targetLanguage: release.targetLanguage,
+                qualityTier: "PREMIUM",
+                isActive: true,
+                isPublic: true,
+                deletedAt: null,
+              },
+              select: { id: true },
+            }),
+          ),
+      },
+    )
     await tx.chapterRelease.update({
       where: { id },
       data: {
         status: "PUBLISHED",
         publishedAt,
         isPublic: true,
+        isActive: true,
         isIndexable: false,
       },
     })
@@ -639,6 +1195,9 @@ export async function bulkReleaseAction(formData: FormData) {
         id: true,
         status: true,
         isPublic: true,
+        qualityTier: true,
+        sourceId: true,
+        targetLanguage: true,
         chapter: {
           select: {
             chapterNumber: true,
@@ -669,6 +1228,53 @@ export async function bulkReleaseAction(formData: FormData) {
       throw new Error("Sürümlerden biri bulunamadı; işlem geri alındı.")
     }
     const publishedAt = new Date()
+    if (input.action === "PUBLISH") {
+      const selectedKeys = new Set<string>()
+      for (const release of existing) {
+        if (!release.sourceId) continue
+        const key = `${release.sourceId}:${release.targetLanguage}`
+        if (selectedKeys.has(key)) {
+          throw new Error(
+            "Aynı kaynak ve çıktı dilinin birden fazla kalite sürümü tek seferde yayınlanamaz.",
+          )
+        }
+        selectedKeys.add(key)
+        await enforceQualityActivation(release, {
+          archiveOtherActive: async () => {
+            await tx.chapterRelease.updateMany({
+              where: {
+                id: { not: release.id },
+                sourceId: release.sourceId!,
+                targetLanguage: release.targetLanguage,
+                isActive: true,
+                deletedAt: null,
+              },
+              data: {
+                isActive: false,
+                isPublic: false,
+                isIndexable: false,
+                status: "ARCHIVED",
+              },
+            })
+          },
+          hasOtherActivePremium: async () =>
+            Boolean(
+              await tx.chapterRelease.findFirst({
+                where: {
+                  id: { not: release.id },
+                  sourceId: release.sourceId!,
+                  targetLanguage: release.targetLanguage,
+                  qualityTier: "PREMIUM",
+                  isActive: true,
+                  isPublic: true,
+                  deletedAt: null,
+                },
+                select: { id: true },
+              }),
+            ),
+        })
+      }
+    }
     await tx.chapterRelease.updateMany({
       where: { id: { in: input.ids }, deletedAt: null },
       data:
@@ -676,18 +1282,21 @@ export async function bulkReleaseAction(formData: FormData) {
           ? {
               status: "PUBLISHED",
               isPublic: true,
+              isActive: true,
               publishedAt,
             }
           : input.action === "DRAFT"
             ? {
                 status: "DRAFT",
                 isPublic: false,
+                isActive: false,
                 isIndexable: false,
                 publishedAt: null,
               }
             : {
                 status: "ARCHIVED",
                 isPublic: false,
+                isActive: false,
                 isIndexable: false,
                 deletedAt: publishedAt,
               },

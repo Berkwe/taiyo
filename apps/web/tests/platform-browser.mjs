@@ -9,27 +9,27 @@ try {
   for (const { role, expectedProfile, expectedStatus } of [
     {
       role: "GUEST",
-      expectedProfile: "👤 Profil · Misafir",
+      expectedProfile: "Profil · Misafir",
       expectedStatus: 401,
     },
     {
       role: "USER",
-      expectedProfile: "👤 Profil · @debug_user",
+      expectedProfile: "Profil · @debug_user",
       expectedStatus: 403,
     },
     {
       role: "UPLOADER",
-      expectedProfile: "👤 Profil · @debug_uploader",
+      expectedProfile: "Profil · @debug_uploader",
       expectedStatus: 200,
     },
     {
       role: "EDITOR",
-      expectedProfile: "👤 Profil · @debug_editor",
+      expectedProfile: "Profil · @debug_editor",
       expectedStatus: 200,
     },
     {
       role: "ADMIN",
-      expectedProfile: "👤 Profil · @debug_admin",
+      expectedProfile: "Profil · @debug_admin",
       expectedStatus: 200,
     },
   ]) {
@@ -45,21 +45,110 @@ try {
     ])
     const page = await context.newPage()
     await page.goto(`${baseUrl}/tr`, { waitUntil: "domcontentloaded" })
-    await page.locator('summary[aria-label="Menüyü aç"]').click()
-    const labels = (await page.locator("details nav").innerText()).split("\n")
-    assert.deepEqual(labels.slice(0, 4), [
-      "🏠 Ana sayfa",
-      "📚 Seriler",
-      "🛍️ Market",
+    const menuTrigger = page.getByRole("button", { name: "Menüyü aç" })
+    await menuTrigger.click()
+    const mobileNav = page.locator("[data-mobile-nav]")
+    await page.waitForFunction(
+      (nav) => nav?.getAttribute("data-popup-motion") === "open",
+      await mobileNav.elementHandle(),
+    )
+    const labels = (await mobileNav.innerText()).split("\n")
+    assert.deepEqual(labels.slice(0, 5), [
+      "Ana sayfa",
+      "Seriler",
+      "Çeviri",
+      "Market",
       expectedProfile,
     ])
-    assert.equal(labels.at(-1), "ℹ️ Hakkımızda")
+    assert.equal(labels.at(-1), "Hakkımızda")
+    assert.doesNotMatch(await mobileNav.innerText(), /🏠|📚|🛍️|ℹ️|👤|🔑|🛠️|🚪/u)
+    assert.ok((await mobileNav.locator("svg").count()) >= 5)
+    if (role === "GUEST") {
+      await page.keyboard.press("Escape")
+      await page.waitForFunction(
+        (nav) => nav?.getAttribute("data-popup-motion") === "closing",
+        await mobileNav.elementHandle(),
+      )
+      assert.equal(await mobileNav.count(), 1)
+      await mobileNav.waitFor({ state: "detached" })
+
+      await page.getByRole("button", { name: "Seri ara" }).click()
+      const searchPopup = page.getByRole("region", {
+        name: "Canlı seri araması",
+      })
+      await page.waitForFunction(
+        (popup) => popup?.getAttribute("data-popup-motion") === "open",
+        await searchPopup.elementHandle(),
+      )
+      await page.keyboard.press("Escape")
+      await page.waitForFunction(
+        (popup) => popup?.getAttribute("data-popup-motion") === "closing",
+        await searchPopup.elementHandle(),
+      )
+      await searchPopup.waitFor({ state: "detached" })
+    }
     const adminResponse = await page.goto(`${baseUrl}/admin`, {
       waitUntil: "domcontentloaded",
     })
     assert.equal(adminResponse?.status(), expectedStatus)
+    if (role === "ADMIN") {
+      await page.getByRole("heading", { name: "Kullanıcılar" }).waitFor()
+      const usersSection = page.locator("#users")
+      assert.ok(
+        (await usersSection.getByRole("button", { name: "Ekle" }).count()) > 0,
+      )
+      assert.ok(
+        (await usersSection.getByLabel(/için eklenecek kredi/).count()) > 0,
+      )
+      assert.equal(await page.getByText("Mandown kaynak kataloğu").count(), 0)
+      assert.equal(
+        await page
+          .getByText(
+            "Gerçek platform alanları yalnız bu yetkili ekranda görünür.",
+          )
+          .count(),
+        0,
+      )
+      assert.ok(
+        (await page.getByRole("button", { name: "Hesabı sil" }).count()) > 0,
+      )
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Hesabı sil" })
+          .first()
+          .getAttribute("type"),
+        "submit",
+      )
+    } else if (expectedStatus === 200) {
+      assert.equal(
+        await page
+          .locator("#users")
+          .getByRole("button", { name: "Ekle" })
+          .count(),
+        0,
+      )
+    }
     await context.close()
   }
+
+  const guideContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  })
+  const guidePage = await guideContext.newPage()
+  await guidePage.goto(`${baseUrl}${readerPath}`, {
+    waitUntil: "networkidle",
+  })
+  await guidePage.evaluate(() => scrollTo(0, 1_200))
+  await guidePage.getByRole("button", { name: "Okuyucu ayarları" }).click()
+  await guidePage.getByText("Rehber · İlk bölümün").waitFor()
+  await guidePage.getByText("AI çeviri kaynağı ve kalitesi").waitFor()
+  await guidePage.getByRole("button", { name: "Anladım" }).click()
+  assert.ok(
+    await guidePage.evaluate(() =>
+      Boolean(localStorage.getItem("novora:guide:reader:v1")),
+    ),
+  )
+  await guideContext.close()
 
   const completedContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -88,10 +177,92 @@ try {
     scrollTo(0, document.documentElement.scrollHeight)
   })
   await completedPage.waitForTimeout(300)
-  assert.match(completedPage.url(), /\/1\/star-post-office-ch1-tr$/)
+  const translationSuggestion = completedPage.getByRole("link", {
+    name: "Diğer bölümü AI ile çevir",
+  })
+  assert.equal(
+    await translationSuggestion.count(),
+    0,
+    "translation prompt appeared before the latest chapter",
+  )
   await completedPage.mouse.wheel(0, 500)
   await completedPage.waitForURL(/\/2\/star-post-office-ch2-tr$/)
+  await completedPage.goto(
+    `${baseUrl}/tr/oku/yildiz-postanesi/3/star-post-office-ch3-tr`,
+    { waitUntil: "networkidle" },
+  )
+  await completedPage.mouse.click(300, 600)
+  await completedPage.evaluate(() => {
+    document.documentElement.style.scrollBehavior = "auto"
+    scrollTo(0, document.documentElement.scrollHeight)
+  })
+  await translationSuggestion.waitFor()
+  const translationPrompt = completedPage.getByLabel(
+    "Sonraki bölümü çevirme önerisi",
+  )
+  await translationPrompt
+    .getByRole("heading", {
+      name: "Hay aksi, son bölüme geldik. Sonraki bölümü AI ile çevirip birkaç dakika içinde okumak ister misiniz?",
+    })
+    .waitFor()
+  await completedPage.waitForTimeout(300)
+  assert.equal(
+    Math.round((await translationPrompt.boundingBox())?.y ?? -1),
+    12,
+    "mobile translation prompt did not keep its top margin",
+  )
+  await completedPage.mouse.click(300, 700)
+  await completedPage.waitForTimeout(200)
+  assert.ok(
+    ((await translationPrompt.boundingBox())?.y ?? 0) >= 60,
+    "translation prompt did not move below the opened reader toolbar",
+  )
+  assert.match(
+    (await translationSuggestion.getAttribute("href")) ?? "",
+    /selectionMode=range/,
+  )
+  assert.match(
+    (await translationSuggestion.getAttribute("href")) ?? "",
+    /quality=premium/,
+  )
+  assert.match(
+    (await translationSuggestion.getAttribute("href")) ?? "",
+    /outputLanguage=tr/,
+  )
+  assert.match(completedPage.url(), /\/3\/star-post-office-ch3-tr$/)
   await completedContext.close()
+
+  const touchTransitionContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+  const touchTransitionPage = await touchTransitionContext.newPage()
+  await touchTransitionPage.goto(`${baseUrl}${readerPath}`, {
+    waitUntil: "networkidle",
+  })
+  await touchTransitionPage.evaluate(() => {
+    document.documentElement.style.scrollBehavior = "auto"
+    scrollTo(0, document.documentElement.scrollHeight)
+  })
+  await touchTransitionPage.waitForTimeout(300)
+  assert.match(touchTransitionPage.url(), /\/1\/star-post-office-ch1-tr$/)
+  const touchTransitionCdp =
+    await touchTransitionContext.newCDPSession(touchTransitionPage)
+  await touchTransitionCdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ id: 1, x: 195, y: 620, radiusX: 4, radiusY: 4, force: 1 }],
+  })
+  await touchTransitionCdp.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ id: 1, x: 195, y: 420, radiusX: 4, radiusY: 4, force: 1 }],
+  })
+  await touchTransitionCdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  })
+  await touchTransitionPage.waitForURL(/\/2\/star-post-office-ch2-tr$/)
+  await touchTransitionContext.close()
 
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -121,6 +292,23 @@ try {
 
   const readerToolbar = page.locator("header[data-reader-controls]")
   const backToTop = page.getByRole("button", { name: "Bölüm başına dön" })
+  const reportButton = page.getByRole("button", { name: "İçeriği bildir" })
+  const buttonMotion = await reportButton.evaluate((button) => {
+    const buttonStyle = getComputedStyle(button)
+    const icon = button.querySelector("svg")
+    const iconStyle = icon ? getComputedStyle(icon) : null
+    return {
+      duration: buttonStyle.transitionDuration,
+      properties: buttonStyle.transitionProperty,
+      iconProperties: iconStyle?.transitionProperty ?? "",
+    }
+  })
+  assert.match(buttonMotion.properties, /translate/)
+  assert.match(buttonMotion.properties, /scale/)
+  assert.match(buttonMotion.duration, /0\.19s/)
+  assert.match(buttonMotion.iconProperties, /rotate/)
+  assert.match(buttonMotion.iconProperties, /scale/)
+
   const arrowWithControls = await backToTop.boundingBox()
   assert.ok(arrowWithControls)
   await page.touchscreen.tap(300, 600)
@@ -205,7 +393,12 @@ try {
   await page.waitForTimeout(400)
   assert.equal(await page.evaluate(() => scrollY), pausedAt)
 
-  await page.getByRole("button", { name: "İçeriği bildir" }).tap()
+  await reportButton.tap()
+  const reportDialog = page.getByRole("dialog")
+  await page.waitForFunction(
+    (dialog) => dialog?.getAttribute("data-popup-motion") === "open",
+    await reportDialog.elementHandle(),
+  )
   await page.waitForFunction(
     () =>
       document.documentElement.style.overflow === "hidden" &&
@@ -357,6 +550,11 @@ try {
   })
 
   await page.getByRole("button", { name: "Rapor penceresini kapat" }).tap()
+  await page.waitForFunction(
+    (dialog) => dialog?.getAttribute("data-popup-motion") === "closing",
+    await reportDialog.elementHandle(),
+  )
+  await reportDialog.waitFor({ state: "detached" })
   await page.touchscreen.tap(300, 600)
   await page.evaluate(() => scrollTo(0, 2_200))
   await page.getByRole("button", { name: "İçeriği bildir" }).tap()
@@ -364,6 +562,12 @@ try {
   await page.getByRole("button", { name: "Bölümden seç" }).tap()
   await page.getByRole("button", { name: "Ekle", exact: true }).tap()
 
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector("[data-selection-pages]")
+        ?.getAttribute("data-selection-pages") !== "1-3",
+  )
   const secondSelectionPreview = page.locator('img[alt="Rapor eki önizlemesi"]')
   await secondSelectionPreview.waitFor()
   const secondSelectionDigest = await secondSelectionPreview.evaluate(

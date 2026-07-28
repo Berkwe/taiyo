@@ -2,17 +2,23 @@ import { db } from "@taiyomoe/db"
 import { storageUrl } from "@taiyomoe/storage"
 import type { Metadata } from "next"
 import Link from "next/link"
+import { ConfirmSubmitButton } from "~/components/platform/confirm-submit-button"
 import { hasPermission } from "~/features/management/permissions"
 import { requireManagementUser } from "~/features/management/server"
 import {
+  addUserCredits,
   bulkReleaseAction,
   createChapter,
   createSeries,
   deleteChapter,
   deleteSeries,
+  deleteUserAccount,
   publishRelease,
+  refundTranslationCampaign,
   updateAccountState,
   updateChapter,
+  updateChapterSource,
+  updateMockTranslationJob,
   updateReportStatus,
   updateSeries,
   updateUserRole,
@@ -175,9 +181,17 @@ export default async function AdminPage({
           orderBy: { sortKey: "desc" },
           include: {
             localizations: { where: { locale: "tr" }, take: 1 },
+            sources: {
+              where: { isActive: true },
+              orderBy: [{ isDefault: "desc" }, { priority: "desc" }],
+            },
             releases: {
               where: { deletedAt: null },
               orderBy: { revision: "desc" },
+              include: {
+                source: true,
+                pages: { orderBy: { pageNumber: "asc" } },
+              },
             },
           },
         },
@@ -185,9 +199,10 @@ export default async function AdminPage({
     }),
     canManageUsers
       ? db.user.findMany({
-          ...(userQuery
-            ? {
-                where: {
+          where: {
+            deletedAt: null,
+            ...(userQuery
+              ? {
                   OR: [
                     { name: { contains: userQuery, mode: "insensitive" } },
                     {
@@ -195,9 +210,9 @@ export default async function AdminPage({
                     },
                     { email: { contains: userQuery, mode: "insensitive" } },
                   ],
-                },
-              }
-            : {}),
+                }
+              : {}),
+          },
           orderBy: { createdAt: "desc" },
           take: 100,
           select: {
@@ -207,6 +222,7 @@ export default async function AdminPage({
             email: true,
             role: true,
             banned: true,
+            creditAccount: { select: { cachedBalance: true } },
           },
         })
       : Promise.resolve([]),
@@ -306,7 +322,7 @@ export default async function AdminPage({
         })
       : Promise.resolve([]),
     Promise.all([
-      db.user.count(),
+      db.user.count({ where: { deletedAt: null } }),
       db.series.count({ where: { deletedAt: null } }),
       db.platformChapter.count({ where: { deletedAt: null } }),
       db.contentReport.count({
@@ -334,7 +350,19 @@ export default async function AdminPage({
       }),
     ),
   ])
-
+  const translationCampaigns = canManageUsers
+    ? await db.translationCampaign.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+        include: {
+          chapters: true,
+          contributions: {
+            select: { id: true, credits: true, status: true, userId: true },
+          },
+          job: true,
+        },
+      })
+    : []
   return (
     <main className="py-8 content-shell" id="main-content">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -354,6 +382,107 @@ export default async function AdminPage({
 
       {canManageUsers ? (
         <>
+          <section className="mb-10" id="translation-campaigns">
+            <h2 className="font-bold text-2xl">Çeviri talepleri</h2>
+            <p className="mt-1 text-nv-muted-foreground text-sm">
+              Mandown katalog talepleri, katkılar ve job durumları. Gerçek
+              backend platformu yalnız job payload’ında yetkili kullanıcılara
+              görünür.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {translationCampaigns.map((campaign) => (
+                <article
+                  className="border border-nv-border bg-surface p-4"
+                  key={campaign.id}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">
+                        {campaign.catalogSeriesId} ·{" "}
+                        {campaign.qualityTier === "PREMIUM"
+                          ? "Premium"
+                          : "Dengeli"}
+                      </h3>
+                      <p className="mt-1 text-nv-muted-foreground text-sm">
+                        {campaign.chapters.length} bölüm ·{" "}
+                        {campaign.fundedCredits}/{campaign.targetCredits} kredi
+                        · {campaign.contributions.length} katkı
+                      </p>
+                      <p className="mt-1 font-mono text-xs">
+                        {campaign.status} · {campaign.sourceEditionId}
+                      </p>
+                      {campaign.job ? (
+                        <details className="mt-2 text-xs">
+                          <summary className="cursor-pointer font-semibold">
+                            Backend job ayrıntısı
+                          </summary>
+                          <pre className="mt-2 max-h-48 overflow-auto bg-background p-3">
+                            {JSON.stringify(campaign.job.payload, null, 2)}
+                          </pre>
+                        </details>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-2">
+                      {campaign.job?.provider === "mandown" &&
+                      campaign.job.status !== "COMPLETED" &&
+                      campaign.status !== "REFUNDED" ? (
+                        <form
+                          action={updateMockTranslationJob}
+                          className="flex gap-2"
+                        >
+                          <input
+                            name="jobId"
+                            type="hidden"
+                            value={campaign.job.id}
+                          />
+                          <input
+                            name="status"
+                            type="hidden"
+                            value="COMPLETED"
+                          />
+                          <ConfirmSubmitButton
+                            className={secondaryButton}
+                            message="Eksik bölümleri Mandown ile indirip doğrudan sitede yayınlamak istiyor musunuz?"
+                          >
+                            Mandown ile indir ve yayınla
+                          </ConfirmSubmitButton>
+                        </form>
+                      ) : null}
+                      {!["REFUNDED", "COMPLETED"].includes(campaign.status) ? (
+                        <form
+                          action={refundTranslationCampaign}
+                          className="flex gap-2"
+                        >
+                          <input
+                            name="campaignId"
+                            type="hidden"
+                            value={campaign.id}
+                          />
+                          <input
+                            className={inputClass}
+                            name="confirmation"
+                            placeholder="IADE yazın"
+                            required
+                          />
+                          <ConfirmSubmitButton
+                            className={secondaryButton}
+                            message="Tüm katkıları iade etmek istiyor musunuz?"
+                          >
+                            Güvenli iade
+                          </ConfirmSubmitButton>
+                        </form>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {translationCampaigns.length === 0 ? (
+                <p className="text-nv-muted-foreground">
+                  Henüz çeviri talebi yok.
+                </p>
+              ) : null}
+            </div>
+          </section>
           <section className="mb-10" id="dashboard">
             <h2 className="mb-4 font-bold text-2xl">Sistem özeti</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -605,8 +734,10 @@ export default async function AdminPage({
                   <tr>
                     <th className="p-3">Kullanıcı</th>
                     <th className="p-3">E-posta</th>
+                    <th className="p-3">Kredi</th>
                     <th className="p-3">Rol</th>
                     <th className="p-3">Hesap</th>
+                    <th className="p-3">Sil</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -619,6 +750,26 @@ export default async function AdminPage({
                         </span>
                       </td>
                       <td className="p-3">{user.email ?? "—"}</td>
+                      <td className="p-3">
+                        <p className="mb-2 font-semibold">
+                          {user.creditAccount?.cachedBalance ?? 0}
+                        </p>
+                        <form action={addUserCredits} className="flex gap-2">
+                          <input name="userId" type="hidden" value={user.id} />
+                          <input
+                            aria-label={`${user.name} için eklenecek kredi`}
+                            className={`${inputClass} w-28`}
+                            min="1"
+                            name="credits"
+                            placeholder="Miktar"
+                            required
+                            type="number"
+                          />
+                          <button className={secondaryButton} type="submit">
+                            Ekle
+                          </button>
+                        </form>
+                      </td>
                       <td className="p-3">
                         <form action={updateUserRole} className="flex gap-2">
                           <input name="userId" type="hidden" value={user.id} />
@@ -662,13 +813,30 @@ export default async function AdminPage({
                           </button>
                         </form>
                       </td>
+                      <td className="p-3">
+                        <form action={deleteUserAccount}>
+                          <input name="userId" type="hidden" value={user.id} />
+                          <input
+                            name="confirmation"
+                            type="hidden"
+                            value={user.username}
+                          />
+                          <ConfirmSubmitButton
+                            className="min-h-11 border border-error px-4 font-semibold text-error hover:bg-error-subtle"
+                            disabled={actor.id === user.id}
+                            message={`${user.name} (@${user.username}) hesabı kalıcı olarak silinsin mi? Giriş bilgileri ve kişisel okuma verileri geri alınamaz.`}
+                          >
+                            Hesabı sil
+                          </ConfirmSubmitButton>
+                        </form>
+                      </td>
                     </tr>
                   ))}
                   {!users.length ? (
                     <tr>
                       <td
                         className="p-6 text-center text-nv-muted-foreground"
-                        colSpan={4}
+                        colSpan={6}
                       >
                         Aramayla eşleşen kullanıcı bulunamadı.
                       </td>
@@ -840,26 +1008,234 @@ export default async function AdminPage({
                             Bölümü güncelle
                           </button>
                         </form>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <details className="mt-3 border border-nv-border p-3">
+                          <summary className="cursor-pointer font-semibold text-sm">
+                            Bu bölüme yeni kaynak veya kalite sürümü yükle
+                          </summary>
+                          <div className="mt-3">
+                            <CbzUploadForm
+                              chapter={{
+                                id: chapter.id,
+                                chapterNumber: chapter.chapterNumber,
+                                sortKey: chapter.sortKey,
+                                canonicalSlug: chapter.canonicalSlug,
+                                title: chapter.localizations[0]?.title ?? "",
+                                sources: chapter.sources,
+                              }}
+                              seriesId={item.id}
+                            />
+                          </div>
+                        </details>
+                        <div className="mt-3 grid gap-3">
                           {chapter.releases.map((release) => (
-                            <form action={publishRelease} key={release.id}>
-                              <input
-                                name="id"
-                                type="hidden"
-                                value={release.id}
-                              />
-                              <button
-                                className={secondaryButton}
-                                disabled={
-                                  !canPublish || release.status === "PUBLISHED"
-                                }
-                                type="submit"
-                              >
-                                {release.status === "PUBLISHED"
-                                  ? `Yayında · ${release.pageCount} sayfa`
-                                  : `Yayınla · ${release.pageCount} sayfa`}
-                              </button>
-                            </form>
+                            <div
+                              className="grid gap-3 border border-nv-border bg-surface-raised p-3"
+                              key={release.id}
+                            >
+                              {release.source ? (
+                                <form
+                                  action={updateChapterSource}
+                                  className="grid gap-3 sm:grid-cols-3"
+                                >
+                                  <input
+                                    name="sourceId"
+                                    type="hidden"
+                                    value={release.source.id}
+                                  />
+                                  <input
+                                    name="releaseId"
+                                    type="hidden"
+                                    value={release.id}
+                                  />
+                                  <label className="grid gap-1 text-sm">
+                                    Gerçek platform
+                                    <select
+                                      className={inputClass}
+                                      defaultValue={release.source.platform}
+                                      name="platform"
+                                    >
+                                      <option value="NAVER">Naver</option>
+                                      <option value="WEBTOONS">Webtoons</option>
+                                      <option value="KAKAO">Kakao</option>
+                                      <option value="OTHER">Diğer</option>
+                                    </select>
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Kaynak dili
+                                    <select
+                                      className={inputClass}
+                                      defaultValue={release.source.language}
+                                      name="sourceLanguage"
+                                    >
+                                      {["en", "ko", "tr", "ja", "zh", "de"].map(
+                                        (language) => (
+                                          <option
+                                            key={language}
+                                            value={language}
+                                          >
+                                            {language.toUpperCase()}
+                                          </option>
+                                        ),
+                                      )}
+                                    </select>
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Anonim etiket
+                                    <input
+                                      className={inputClass}
+                                      defaultValue={
+                                        release.source.displayLabel ?? ""
+                                      }
+                                      name="displayLabel"
+                                      placeholder="Otomatik"
+                                    />
+                                  </label>
+                                  <label className="grid gap-1 text-sm sm:col-span-2">
+                                    Kaynak açıklaması
+                                    <input
+                                      className={inputClass}
+                                      defaultValue={release.source.description}
+                                      name="sourceDescription"
+                                      required
+                                    />
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Öncelik
+                                    <input
+                                      className={inputClass}
+                                      defaultValue={release.source.priority}
+                                      min="0"
+                                      name="sourcePriority"
+                                      type="number"
+                                    />
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Kaynak URL
+                                    <input
+                                      className={inputClass}
+                                      defaultValue={
+                                        release.source.sourceUrl ?? ""
+                                      }
+                                      name="sourceUrl"
+                                      type="url"
+                                    />
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Harici ID
+                                    <input
+                                      className={inputClass}
+                                      defaultValue={
+                                        release.source.externalId ?? ""
+                                      }
+                                      name="externalId"
+                                    />
+                                  </label>
+                                  <label className="flex min-h-11 items-center gap-2 text-sm">
+                                    <input
+                                      defaultChecked={release.source.isDefault}
+                                      name="isDefault"
+                                      type="checkbox"
+                                    />
+                                    Varsayılan kaynak
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Çıktı dili
+                                    <select
+                                      className={inputClass}
+                                      defaultValue={release.targetLanguage}
+                                      name="targetLanguage"
+                                    >
+                                      {["tr", "en", "ko", "de"].map(
+                                        (language) => (
+                                          <option
+                                            key={language}
+                                            value={language}
+                                          >
+                                            {language.toUpperCase()}
+                                          </option>
+                                        ),
+                                      )}
+                                    </select>
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Kalite
+                                    <select
+                                      className={inputClass}
+                                      defaultValue={release.qualityTier}
+                                      name="qualityTier"
+                                    >
+                                      <option value="BALANCED">Dengeli</option>
+                                      <option value="PREMIUM">Premium</option>
+                                    </select>
+                                  </label>
+                                  <label className="grid gap-1 text-sm">
+                                    Pipeline sürümü
+                                    <input
+                                      className={inputClass}
+                                      defaultValue={
+                                        release.pipelineVersion ?? "v1"
+                                      }
+                                      name="pipelineVersion"
+                                      required
+                                    />
+                                  </label>
+                                  <label className="grid gap-1 text-sm sm:col-span-2">
+                                    Bölüm thumbnail
+                                    <select
+                                      className={inputClass}
+                                      defaultValue={
+                                        chapter.thumbnailStorageKey ?? ""
+                                      }
+                                      name="thumbnailStorageKey"
+                                    >
+                                      <option value="">
+                                        Otomatik fallback kullan
+                                      </option>
+                                      {chapter.releases.flatMap((candidate) =>
+                                        candidate.pages.map((page) => (
+                                          <option
+                                            key={page.id}
+                                            value={page.storageKey}
+                                          >
+                                            Sürüm {candidate.id.slice(0, 8)} ·
+                                            sayfa {page.pageNumber}
+                                          </option>
+                                        )),
+                                      )}
+                                    </select>
+                                  </label>
+                                  <button
+                                    className={secondaryButton}
+                                    type="submit"
+                                  >
+                                    Kaynak ve sürümü güncelle
+                                  </button>
+                                </form>
+                              ) : (
+                                <p className="text-nv-muted-foreground text-sm">
+                                  Eski sürüm · kaynak bilgisi henüz bağlanmamış.
+                                </p>
+                              )}
+                              <form action={publishRelease}>
+                                <input
+                                  name="id"
+                                  type="hidden"
+                                  value={release.id}
+                                />
+                                <button
+                                  className={secondaryButton}
+                                  disabled={
+                                    !canPublish ||
+                                    release.status === "PUBLISHED"
+                                  }
+                                  type="submit"
+                                >
+                                  {release.status === "PUBLISHED"
+                                    ? `Yayında · ${release.pageCount} sayfa`
+                                    : `Yayınla · ${release.pageCount} sayfa`}
+                                </button>
+                              </form>
+                            </div>
                           ))}
                           {canDelete ? (
                             <form action={deleteChapter}>
