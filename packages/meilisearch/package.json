@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@t3-oss/env-core": "^0.13.8",
+    "@t3-oss/env-core": "^0.13.11",
     "luxon": "^3.7.2",
     "meilisearch": "^0.54.0",
     "punycode": "^2.3.1",

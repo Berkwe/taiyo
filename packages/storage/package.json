@@ -14,7 +14,7 @@
     "migrate:r2": "tsx src/migrate-r2.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.937.0",
+    "@aws-sdk/client-s3": "^3.1095.0",
     "fflate": "^0.8.2"
   },
   "devDependencies": {

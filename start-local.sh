@@ -34,9 +34,28 @@ if [[ ! -d node_modules ]]; then
   corepack pnpm install --frozen-lockfile
 fi
 
+APP_URL="${NOVORA_LOCAL_URL:-http://localhost:3000/tr}"
+APP_HEALTH_URL="${APP_URL%/tr}/api/health"
+
+if node -e '
+  fetch(process.argv[1])
+    .then(async (response) => {
+      const body = await response.json()
+      process.exit(response.ok && body.status === "ok" && body.checks ? 0 : 1)
+    })
+    .catch(() => process.exit(1))
+' "$APP_HEALTH_URL"; then
+  echo
+  echo "NovoraScans zaten çalışıyor: $APP_URL"
+  if [[ "${NOVORA_NO_BROWSER:-0}" != "1" ]] &&
+    command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$APP_URL" >/dev/null 2>&1 || true
+  fi
+  exit 0
+fi
+
 corepack pnpm setup:local
 
-APP_URL="${NOVORA_LOCAL_URL:-http://localhost:3000/tr}"
 echo
 echo "NovoraScans başlatılıyor: $APP_URL"
 echo "Durdurmak için Ctrl+C kullanabilirsiniz."

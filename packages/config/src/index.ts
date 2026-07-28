@@ -7,6 +7,7 @@ export const config = {
     showFollowing: true,
     showLibrary: true,
     homeLayout: "ROWS",
+    translationLanguage: "tr",
   } satisfies Required<PrismaJson.UserSettings>,
   files: {
     allowedExtensions: ["jpg", "jpeg", "png", "webp", "gif"],

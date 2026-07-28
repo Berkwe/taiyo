@@ -16,7 +16,32 @@ export const env = createEnv({
    * Specify your server-side environment variables schema here.
    * This way you can ensure the app isn't built with invalid env vars.
    */
-  server: {},
+  server: {
+    SOURCE_CATALOG_PROVIDER: z.enum(["mandown"]).default("mandown"),
+    MANDOWN_PYTHON: z.string().min(1).optional(),
+    MANDOWN_DOWNLOAD_ROOT: z.string().min(1).default("storage/mandown"),
+    TRANSLATION_BALANCED_CREDITS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(100),
+    TRANSLATION_PREMIUM_CREDITS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(150),
+    MAX_CHAPTERS_PER_REQUEST: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .default(10),
+    CONTRIBUTOR_EARLY_ACCESS_HOURS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(24),
+  },
 
   /**
    * Specify your client-side environment variables schema here.

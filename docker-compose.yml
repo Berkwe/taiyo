@@ -35,6 +35,13 @@ services:
     volumes:
       - "./data/dragonfly:/data"
 
+  mailpit:
+    image: "axllent/mailpit:v1.27"
+    restart: unless-stopped
+    ports:
+      - "${SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
   clickhouse:
     image: "clickhouse:24"
     restart: unless-stopped

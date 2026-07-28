@@ -2,6 +2,8 @@
 
 # dependencies
 node_modules
+.venv-mandown/
+__pycache__/
 .pnp
 .pnp.js
 
@@ -41,6 +43,8 @@ data/
 storage/*
 !storage/.gitkeep
 backups/
+storage/mandown/
+apps/web/storage/
 
 # turbo
 .turbo
