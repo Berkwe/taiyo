@@ -72,22 +72,61 @@ const release = (
   targetLanguage: Locale,
   score: number,
   canonical = false,
-): ChapterRelease => ({
-  id,
-  targetLanguage,
-  sourceLanguage: "ko",
-  profileId,
-  revision: 1,
-  releaseGroup: targetLanguage === "tr" ? "Novora Studio" : "Northstar Press",
-  publishedAt: "2026-07-20T10:00:00.000Z",
-  humanReviewed: profileId !== "profile-ai-standard",
-  glossaryUsed: profileId.includes("ai"),
-  characterMemoryUsed: profileId === "profile-ai-ultra",
-  overallQualityScore: score,
-  isCanonicalForLanguage: canonical,
-  isIndexable: true,
-  pages: pages(id),
-})
+): ChapterRelease => {
+  const seriesId = id.split("-ch")[0] ?? id
+  const sourceKind = profileId.includes("community")
+    ? "ko-primary"
+    : id.includes("standard-tr")
+      ? "en-alternative"
+      : "en-primary"
+  const sourceLanguage = sourceKind.startsWith("en") ? "en" : "ko"
+  const primary = sourceKind.endsWith("primary")
+  const profile = translationProfiles.find((item) => item.id === profileId)
+  return {
+    id,
+    targetLanguage,
+    sourceLanguage,
+    source: {
+      id: `${seriesId}-source-${sourceKind}`,
+      sourceLanguage,
+      descriptions:
+        sourceLanguage === "en"
+          ? {
+              tr: primary
+                ? "Kaliteli, insan eliyle hazırlanmış İngilizce kaynak."
+                : "Alternatif İngilizce kaynak.",
+              en: primary
+                ? "High-quality English source prepared by human editors."
+                : "Alternative English source.",
+            }
+          : {
+              tr: "Doğrudan kaliteli Korece kaynak.",
+              en: "High-quality source directly from Korean.",
+            },
+      priority: primary ? 100 : 50,
+      isDefault: canonical,
+    },
+    qualityTier: profileId === "profile-ai-ultra" ? "premium" : "balanced",
+    translationType: profile?.isAiGenerated
+      ? "ai"
+      : profile?.isHumanReviewed
+        ? "human"
+        : "unknown",
+    isActive: true,
+    pipelineVersion: profileId === "profile-ai-ultra" ? "v2-premium" : "v1",
+    profileId,
+    revision: 1,
+    releaseGroup: targetLanguage === "tr" ? "Novora Studio" : "Northstar Press",
+    publishedAt: "2026-07-20T10:00:00.000Z",
+    humanReviewed: profileId !== "profile-ai-standard",
+    glossaryUsed: profileId.includes("ai"),
+    characterMemoryUsed: profileId === "profile-ai-ultra",
+    overallQualityScore: score,
+    isCanonicalForLanguage: canonical,
+    isIndexable: true,
+    pages: pages(id),
+  }
+}
 
 const chapters = (slug: string, multiProfile = false): Chapter[] =>
   [1, 2, 3].map((chapterNumber) => {
@@ -423,6 +462,20 @@ export const seriesFixtures: Series[] = [
           id: `star-post-office-ch${chapterNumber}-tr`,
           targetLanguage: "tr",
           sourceLanguage: "tr",
+          source: {
+            id: "star-post-office-source-tr-primary",
+            sourceLanguage: "tr",
+            descriptions: {
+              tr: "Novora için hazırlanmış özgün Türkçe kaynak.",
+              en: "Original Turkish source prepared for Novora.",
+            },
+            priority: 100,
+            isDefault: true,
+          },
+          qualityTier: "premium",
+          translationType: "ai",
+          isActive: true,
+          pipelineVersion: "v2-premium",
           profileId: "profile-community",
           revision: 1,
           releaseGroup: "Novora Studio",
@@ -449,6 +502,20 @@ export const seriesFixtures: Series[] = [
           id: `star-post-office-ch${chapterNumber}-en`,
           targetLanguage: "en",
           sourceLanguage: "tr",
+          source: {
+            id: "star-post-office-source-tr-primary",
+            sourceLanguage: "tr",
+            descriptions: {
+              tr: "Novora için hazırlanmış özgün Türkçe kaynak.",
+              en: "Original Turkish source prepared for Novora.",
+            },
+            priority: 100,
+            isDefault: true,
+          },
+          qualityTier: "balanced",
+          translationType: "ai",
+          isActive: true,
+          pipelineVersion: "v1",
           profileId: "profile-community",
           revision: 1,
           releaseGroup: "Novora Studio",

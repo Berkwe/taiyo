@@ -1,6 +1,5 @@
 import Image from "next/image"
 import type { CSSProperties } from "react"
-import { publicSeries } from "~/features/platform/catalog"
 import { copy } from "~/features/platform/copy"
 import type { Locale, Series } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
@@ -13,9 +12,11 @@ import { SeriesReadingActions } from "./series-reading-actions"
 
 export function SeriesDetail({
   locale,
+  randomSeriesHrefs,
   series,
 }: {
   locale: Locale
+  randomSeriesHrefs: string[]
   series: Series
 }) {
   const t = copy[locale]
@@ -150,7 +151,7 @@ export function SeriesDetail({
       </div>
       <RandomSeriesFloatingButton
         currentHref={paths.series(locale, series.slug)}
-        hrefs={publicSeries.map((item) => paths.series(locale, item.slug))}
+        hrefs={randomSeriesHrefs}
         label={
           locale === "tr" ? "Başka rastgele seri" : "Another random series"
         }

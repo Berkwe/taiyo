@@ -1,6 +1,6 @@
-import { publicSeries } from "./catalog"
 import { locales } from "./domain"
 import { paths, slugify } from "./paths"
+import { getPublicSeries } from "./server-series"
 
 const absoluteUrl = (pathname: string) =>
   new URL(
@@ -37,8 +37,12 @@ export function sitemapIndexXml(paths: string[]) {
     .join("\n")}\n</sitemapindex>\n`
 }
 
-export const staticSitemapEntries = () =>
-  locales.flatMap((locale) => [
+export const staticSitemapEntries = () => [
+  {
+    url: absoluteUrl(paths.translate()),
+    lastModified: "2026-07-25",
+  },
+  ...locales.flatMap((locale) => [
     {
       url: absoluteUrl(paths.home(locale)),
       lastModified: "2026-07-24",
@@ -55,18 +59,19 @@ export const staticSitemapEntries = () =>
       url: absoluteUrl(paths.genre(locale, slugify(genre))),
       lastModified: "2026-07-24",
     })),
-  ])
+  ]),
+]
 
-export const seriesSitemapEntries = () =>
-  publicSeries.flatMap((series) =>
+export const seriesSitemapEntries = async () =>
+  (await getPublicSeries()).flatMap((series) =>
     locales.map((locale) => ({
       url: absoluteUrl(paths.series(locale, series.slug)),
       lastModified: series.updatedAt,
     })),
   )
 
-export const chapterSitemapEntries = () =>
-  publicSeries.flatMap((series) =>
+export const chapterSitemapEntries = async () =>
+  (await getPublicSeries()).flatMap((series) =>
     locales.flatMap((locale) =>
       series.chapters.map((chapter) => ({
         url: absoluteUrl(paths.chapter(locale, series.slug, chapter.number)),

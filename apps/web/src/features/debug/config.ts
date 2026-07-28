@@ -3,6 +3,20 @@ import type { ManagementRole } from "~/features/management/permissions"
 export const debugViewerCookie = "novora-debug-viewer"
 export type DebugViewerRole = "GUEST" | ManagementRole
 
+export function isLoopbackAuthUrl(value: string | undefined) {
+  if (!value) return false
+  try {
+    const hostname = new URL(value).hostname
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]"
+    )
+  } catch {
+    return false
+  }
+}
+
 export const debugAccounts: Record<
   DebugViewerRole,
   { id: string; name: string; description: string }

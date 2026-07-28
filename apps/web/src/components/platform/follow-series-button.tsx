@@ -5,11 +5,15 @@ import { useEffect, useState } from "react"
 import type { Locale } from "~/features/platform/domain"
 
 export function FollowSeriesButton({
+  followLabel,
   locale,
   seriesSlug,
+  unfollowLabel,
 }: {
+  followLabel?: string
   locale: Locale
   seriesSlug: string
+  unfollowLabel?: string
 }) {
   const [following, setFollowing] = useState(false)
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
@@ -71,11 +75,11 @@ export function FollowSeriesButton({
         {following ? <BellOff size={18} /> : <Bell size={18} />}
         {locale === "tr"
           ? following
-            ? "Takibi bırak"
-            : "Seriyi takip et"
+            ? (unfollowLabel ?? "Takibi bırak")
+            : (followLabel ?? "Seriyi takip et")
           : following
-            ? "Unfollow"
-            : "Follow series"}
+            ? (unfollowLabel ?? "Unfollow")
+            : (followLabel ?? "Follow series")}
       </button>
       {message ? (
         <p aria-live="polite" className="mt-2 text-nv-muted-foreground text-sm">

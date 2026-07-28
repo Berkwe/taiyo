@@ -41,6 +41,8 @@ export const paths = {
   profile: (locale: Locale) => `/${locale}/${segments[locale].profile}`,
   about: (locale: Locale) => `/${locale}/${segments[locale].about}`,
   market: (locale: Locale) => `/${locale}/${segments[locale].market}`,
+  translate: () => "/translate",
+  translateSeries: (catalogSeriesId: string) => `/translate/${catalogSeriesId}`,
 }
 
 export const slugify = (value: string) =>

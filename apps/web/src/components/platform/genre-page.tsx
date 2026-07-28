@@ -4,6 +4,7 @@ import { publicSeries } from "~/features/platform/catalog"
 import type { Locale } from "~/features/platform/domain"
 import { paths, slugify } from "~/features/platform/paths"
 import { localeAlternates, pageMetadata } from "~/features/platform/seo"
+import { getPublicSeries } from "~/features/platform/server-series"
 import { SeriesCard } from "./series-card"
 
 export const knownGenres = [
@@ -17,7 +18,10 @@ export async function genreMetadata({
   locale: Locale
   genreSlug: string
 }): Promise<Metadata> {
-  const genre = knownGenres.find((item) => slugify(item) === genreSlug)
+  const series = await getPublicSeries()
+  const genre = series
+    .flatMap((item) => item.genres)
+    .find((item) => slugify(item) === genreSlug)
   if (!genre) return {}
   return pageMetadata({
     title:
@@ -37,16 +41,19 @@ export async function genreMetadata({
   })
 }
 
-export function GenrePage({
+export async function GenrePage({
   locale,
   genreSlug,
 }: {
   locale: Locale
   genreSlug: string
 }) {
-  const genre = knownGenres.find((item) => slugify(item) === genreSlug)
+  const series = await getPublicSeries()
+  const genre = series
+    .flatMap((item) => item.genres)
+    .find((item) => slugify(item) === genreSlug)
   if (!genre) notFound()
-  const results = publicSeries.filter((series) => series.genres.includes(genre))
+  const results = series.filter((item) => item.genres.includes(genre))
   return (
     <main className="py-12 content-shell" id="main-content">
       <p className="font-semibold text-nv-primary text-sm uppercase tracking-[.15em]">

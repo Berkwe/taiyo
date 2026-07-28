@@ -1,13 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import {
-  type CatalogFilters,
-  filterSeries,
-  publicSeries,
-} from "~/features/platform/catalog"
+import { type CatalogFilters, filterSeries } from "~/features/platform/catalog"
 import { copy } from "~/features/platform/copy"
-import type { Locale } from "~/features/platform/domain"
+import type { Locale, Series } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
 import { EmptyState } from "./content"
 import { RandomSeriesButton } from "./random-series-button"
@@ -19,10 +15,12 @@ const statuses = ["ONGOING", "COMPLETED", "HIATUS"]
 export function CatalogPage({
   locale,
   filters,
+  series,
   searchOnly = false,
 }: {
   locale: Locale
   filters: CatalogFilters
+  series: Series[]
   searchOnly?: boolean
 }) {
   const t = copy[locale]
@@ -33,8 +31,8 @@ export function CatalogPage({
     sort: filters.sort ?? "popular",
   })
   const results = useMemo(
-    () => filterSeries(publicSeries, liveFilters, locale),
-    [liveFilters, locale],
+    () => filterSeries(series, liveFilters, locale),
+    [liveFilters, locale, series],
   )
 
   useEffect(() => {
@@ -66,9 +64,7 @@ export function CatalogPage({
         {!searchOnly ? (
           <div className="mt-5">
             <RandomSeriesButton
-              hrefs={publicSeries.map((series) =>
-                paths.series(locale, series.slug),
-              )}
+              hrefs={series.map((item) => paths.series(locale, item.slug))}
               label={locale === "tr" ? "Rastgele seri" : "Random series"}
             />
           </div>

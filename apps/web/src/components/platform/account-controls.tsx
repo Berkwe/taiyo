@@ -1,6 +1,7 @@
 "use client"
 
 import { authClient } from "@taiyomoe/auth/client"
+import { LogIn, LogOut, UserRound, Wrench } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { Locale } from "~/features/platform/domain"
@@ -15,6 +16,7 @@ export function AccountControls({
   locale,
   nickname,
   mockRole,
+  monochromeIcons = false,
   unreadNotifications = 0,
 }: {
   authenticated: boolean
@@ -22,6 +24,7 @@ export function AccountControls({
   locale: Locale
   nickname: string
   mockRole?: string
+  monochromeIcons?: boolean
   unreadNotifications?: number
 }) {
   const router = useRouter()
@@ -29,10 +32,30 @@ export function AccountControls({
     return (
       <>
         <Link className={className} href={paths.profile(locale)}>
-          👤 {locale === "tr" ? "Profil" : "Profile"} · {nickname}
+          {monochromeIcons ? (
+            <UserRound
+              aria-hidden="true"
+              className="mr-2 text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+          ) : (
+            "👤 "
+          )}
+          {locale === "tr" ? "Profil" : "Profile"} · {nickname}
         </Link>
         <Link className={className} href="/auth/sign-in">
-          🔑 {locale === "tr" ? "Giriş" : "Sign in"}
+          {monochromeIcons ? (
+            <LogIn
+              aria-hidden="true"
+              className="mr-2 text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+          ) : (
+            "🔑 "
+          )}
+          {locale === "tr" ? "Giriş" : "Sign in"}
         </Link>
       </>
     )
@@ -40,7 +63,17 @@ export function AccountControls({
   return (
     <>
       <Link className={className} href={paths.profile(locale)}>
-        👤 {locale === "tr" ? "Profil" : "Profile"} · {nickname}
+        {monochromeIcons ? (
+          <UserRound
+            aria-hidden="true"
+            className="mr-2 text-nv-muted-foreground"
+            size={17}
+            strokeWidth={1.8}
+          />
+        ) : (
+          "👤 "
+        )}
+        {locale === "tr" ? "Profil" : "Profile"} · {nickname}
         {unreadNotifications > 0 ? (
           <>
             <span className="sr-only">
@@ -58,7 +91,17 @@ export function AccountControls({
       </Link>
       {canManage ? (
         <Link className={className} href="/admin">
-          🛠️ {locale === "tr" ? "Yönetim" : "Admin"}
+          {monochromeIcons ? (
+            <Wrench
+              aria-hidden="true"
+              className="mr-2 text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+          ) : (
+            "🛠️ "
+          )}
+          {locale === "tr" ? "Yönetim" : "Admin"}
         </Link>
       ) : null}
       {!mockRole ? (
@@ -70,7 +113,17 @@ export function AccountControls({
           }}
           type="button"
         >
-          🚪 {locale === "tr" ? "Çıkış" : "Sign out"}
+          {monochromeIcons ? (
+            <LogOut
+              aria-hidden="true"
+              className="mr-2 text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+          ) : (
+            "🚪 "
+          )}
+          {locale === "tr" ? "Çıkış" : "Sign out"}
         </button>
       ) : null}
     </>

@@ -28,6 +28,7 @@ export function SeriesPoster({
         priority={priority}
         sizes="(max-width: 640px) 44vw, (max-width: 1024px) 28vw, 210px"
         src={series.cover}
+        unoptimized={series.cover.startsWith("/api/storage/")}
       />
     </div>
   )

@@ -37,10 +37,27 @@ export interface ReleasePage {
   alt: string
 }
 
+export type TranslationQualityTier = "balanced" | "premium"
+export type TranslationType = "ai" | "human" | "unknown"
+
+export interface PublicChapterSource {
+  id: string
+  sourceLanguage: string
+  displayLabel?: string
+  descriptions: Record<Locale, string>
+  priority: number
+  isDefault: boolean
+}
+
 export interface ChapterRelease {
   id: string
   targetLanguage: Locale
   sourceLanguage: string
+  source: PublicChapterSource
+  qualityTier: TranslationQualityTier
+  translationType: TranslationType
+  isActive: boolean
+  pipelineVersion: string
   profileId: string
   revision: number
   releaseGroup: string
@@ -61,6 +78,7 @@ export interface Chapter {
   canonicalSlug: string
   localizations: Record<Locale, { title: string; description: string }>
   publishedAt: string
+  thumbnail?: string
   releases: ChapterRelease[]
 }
 

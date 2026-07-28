@@ -1,5 +1,5 @@
 import { db } from "@taiyomoe/db"
-import { Menu } from "lucide-react"
+import { BookOpen, House, Info, Languages, ShoppingBag } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { getDebugViewerRole } from "~/features/debug/viewer"
@@ -10,6 +10,7 @@ import { paths } from "~/features/platform/paths"
 import { getSession } from "~/utils/get-session"
 import { AccountControls } from "./account-controls"
 import { HeaderSearch } from "./header-search"
+import { MobileNavMenu } from "./mobile-nav-menu"
 
 export async function AppHeader({ locale }: { locale: Locale }) {
   const t = copy[locale]
@@ -48,7 +49,7 @@ export async function AppHeader({ locale }: { locale: Locale }) {
             className="h-auto w-full max-w-56 object-contain object-left sm:max-w-72 lg:max-w-80 dark:hidden"
             height={700}
             priority
-            src="/novora-header-light.png"
+            src="/assets/brand/novora-header-wordmark-light.png"
             width={2176}
           />
           <Image
@@ -56,7 +57,7 @@ export async function AppHeader({ locale }: { locale: Locale }) {
             className="hidden h-auto w-full max-w-56 object-contain object-left sm:max-w-72 lg:max-w-80 dark:block"
             height={700}
             priority
-            src="/novora-header-dark.png"
+            src="/assets/brand/novora-header-wordmark-dark.png"
             width={2176}
           />
         </Link>
@@ -65,22 +66,52 @@ export async function AppHeader({ locale }: { locale: Locale }) {
           className="ml-4 hidden items-center gap-1 lg:flex"
         >
           <Link
-            className="rounded px-3 py-2 hover:bg-surface-raised"
+            className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-surface-raised"
             href={paths.home(locale)}
           >
-            🏠 {t.nav.home}
+            <House
+              aria-hidden="true"
+              className="text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+            {t.nav.home}
           </Link>
           <Link
-            className="rounded px-3 py-2 hover:bg-surface-raised"
+            className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-surface-raised"
             href={paths.discover(locale)}
           >
-            📚 {t.nav.discover}
+            <BookOpen
+              aria-hidden="true"
+              className="text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+            {t.nav.discover}
           </Link>
           <Link
-            className="rounded px-3 py-2 hover:bg-surface-raised"
+            className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-surface-raised"
+            href={paths.translate()}
+          >
+            <Languages
+              aria-hidden="true"
+              className="text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+            {t.nav.translate}
+          </Link>
+          <Link
+            className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-surface-raised"
             href={paths.market(locale)}
           >
-            🛍️ {t.nav.market}
+            <ShoppingBag
+              aria-hidden="true"
+              className="text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+            {t.nav.market}
           </Link>
           <AccountControls
             authenticated={authenticated}
@@ -93,62 +124,35 @@ export async function AppHeader({ locale }: { locale: Locale }) {
             mockRole={previewRole ?? undefined}
             unreadNotifications={unreadNotifications}
             locale={locale}
+            monochromeIcons
           />
           <Link
-            className="rounded px-3 py-2 hover:bg-surface-raised"
+            className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-surface-raised"
             href={paths.about(locale)}
           >
-            ℹ️ {t.nav.about}
+            <Info
+              aria-hidden="true"
+              className="text-nv-muted-foreground"
+              size={17}
+              strokeWidth={1.8}
+            />
+            {t.nav.about}
           </Link>
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <HeaderSearch locale={locale} />
-          <details className="relative lg:hidden">
-            <summary
-              aria-label={locale === "tr" ? "Menüyü aç" : "Open menu"}
-              className="flex size-11 cursor-pointer list-none items-center justify-center rounded-md border border-nv-border font-semibold"
-            >
-              <Menu aria-hidden="true" size={20} />
-            </summary>
-            <nav className="absolute top-12 right-0 grid min-w-48 gap-1 border border-nv-border bg-surface p-2 shadow-xl">
-              <Link
-                className="px-3 py-3 hover:bg-surface-raised"
-                href={paths.home(locale)}
-              >
-                🏠 {t.nav.home}
-              </Link>
-              <Link
-                className="px-3 py-3 hover:bg-surface-raised"
-                href={paths.discover(locale)}
-              >
-                📚 {t.nav.discover}
-              </Link>
-              <Link
-                className="px-3 py-3 hover:bg-surface-raised"
-                href={paths.market(locale)}
-              >
-                🛍️ {t.nav.market}
-              </Link>
-              <AccountControls
-                authenticated={authenticated}
-                canManage={
-                  effectiveRole
-                    ? hasPermission(effectiveRole, "series:write")
-                    : false
-                }
-                nickname={nickname}
-                mockRole={previewRole ?? undefined}
-                unreadNotifications={unreadNotifications}
-                locale={locale}
-              />
-              <Link
-                className="px-3 py-3 hover:bg-surface-raised"
-                href={paths.about(locale)}
-              >
-                ℹ️ {t.nav.about}
-              </Link>
-            </nav>
-          </details>
+          <MobileNavMenu
+            authenticated={authenticated}
+            canManage={
+              effectiveRole
+                ? hasPermission(effectiveRole, "series:write")
+                : false
+            }
+            locale={locale}
+            nickname={nickname}
+            mockRole={previewRole ?? undefined}
+            unreadNotifications={unreadNotifications}
+          />
         </div>
       </div>
     </header>

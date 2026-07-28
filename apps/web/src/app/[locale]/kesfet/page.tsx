@@ -5,6 +5,7 @@ import type { CatalogFilters } from "~/features/platform/catalog"
 import { isLocale } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
 import { localeAlternates, pageMetadata } from "~/features/platform/seo"
+import { getPublicSeries } from "~/features/platform/server-series"
 
 export async function generateMetadata({
   params,
@@ -32,5 +33,11 @@ export default async function DiscoverPage({
 }) {
   const { locale } = await params
   if (!isLocale(locale) || locale !== "tr") notFound()
-  return <CatalogPage filters={await searchParams} locale={locale} />
+  return (
+    <CatalogPage
+      filters={await searchParams}
+      locale={locale}
+      series={await getPublicSeries()}
+    />
+  )
 }

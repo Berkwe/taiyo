@@ -1,7 +1,15 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
-import type { ChapterRelease, Locale } from "~/features/platform/domain"
-import { getProfile } from "~/features/platform/fixtures"
+import type {
+  Chapter,
+  ChapterRelease,
+  Locale,
+} from "~/features/platform/domain"
+import {
+  qualityLabel,
+  releaseSourceLabel,
+} from "~/features/platform/source-editions"
+import { SourceInfoPopover } from "./source-info-popover"
 
 export function SectionHeader({
   title,
@@ -26,32 +34,6 @@ export function SectionHeader({
         </Link>
       ) : null}
     </div>
-  )
-}
-
-export function TranslationProfileBadge({
-  profileId,
-  locale,
-  recommended,
-}: {
-  profileId: string
-  locale: Locale
-  recommended?: boolean
-}) {
-  const profile = getProfile(profileId)
-  if (!profile) return null
-  return (
-    <span className="inline-flex items-center gap-1 rounded-sm border border-nv-border bg-nv-primary-soft px-2 py-1 font-semibold text-foreground text-xs">
-      {profile.labels[locale]}
-      {recommended ? (
-        <span title={locale === "tr" ? "Önerilen" : "Recommended"}>
-          <span aria-hidden="true">★</span>
-          <span className="sr-only">
-            {locale === "tr" ? "Önerilen" : "Recommended"}
-          </span>
-        </span>
-      ) : null}
-    </span>
   )
 }
 
@@ -84,38 +66,42 @@ export function Breadcrumbs({
 }
 
 export function ReleaseCard({
+  chapter,
   release,
   locale,
   href,
 }: {
+  chapter: Chapter
   release: ChapterRelease
   locale: Locale
   href: string
 }) {
-  const profile = getProfile(release.profileId)
+  const sourceLabel = releaseSourceLabel(chapter, release, locale)
   return (
     <article className="grid gap-4 border border-nv-border bg-surface p-4 sm:grid-cols-[1fr_auto] sm:items-center">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <TranslationProfileBadge
-            locale={locale}
-            profileId={release.profileId}
-            recommended={release.isCanonicalForLanguage}
-          />
           <span className="text-nv-muted-foreground text-sm">
-            {release.targetLanguage.toLocaleUpperCase()} ·{" "}
-            {release.releaseGroup}
+            {release.targetLanguage.toLocaleUpperCase("en")} · {sourceLabel}
           </span>
+          <SourceInfoPopover
+            description={release.source.descriptions[locale]}
+            label={sourceLabel}
+          />
+          {release.translationType === "ai" ? (
+            <span
+              className={
+                release.qualityTier === "premium"
+                  ? "quality-badge-premium"
+                  : "quality-badge-balanced"
+              }
+            >
+              {qualityLabel(release.qualityTier, locale)}
+            </span>
+          ) : null}
         </div>
         <p className="mt-2 text-nv-muted-foreground text-sm">
-          {profile?.descriptions[locale]}
-        </p>
-        <p className="mt-2 text-sm">
-          {locale === "tr" ? "Kalite skoru" : "Quality score"}:{" "}
-          <strong>{release.overallQualityScore}/100</strong>
-          {release.humanReviewed
-            ? ` · ${locale === "tr" ? "İnsan kontrollü" : "Human reviewed"}`
-            : ""}
+          {release.source.descriptions[locale]}
         </p>
       </div>
       <Link

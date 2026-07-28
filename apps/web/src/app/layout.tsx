@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
-  icons: { icon: "/novorascans-logo.png", apple: "/novorascans-logo.png" },
+  icons: {
+    icon: "/assets/brand/novora-favicon.png",
+    apple: "/assets/brand/novora-favicon.png",
+  },
   openGraph: {
     siteName: siteConfig.name,
     type: "website",

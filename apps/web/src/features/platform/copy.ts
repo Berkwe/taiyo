@@ -7,6 +7,7 @@ export const copy = {
       discover: "Seriler",
       about: "Hakkımızda",
       market: "Market",
+      translate: "Çeviri",
       search: "Ara",
     },
     hero: {
@@ -62,6 +63,7 @@ export const copy = {
       discover: "Series",
       about: "About",
       market: "Market",
+      translate: "Translate",
       search: "Search",
     },
     hero: {

@@ -3,23 +3,20 @@
 import { ArrowRight, Search, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { filterSeries, publicSeries } from "~/features/platform/catalog"
+import { useEffect, useRef, useState } from "react"
 import type { Locale } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
+import type { PublicSeriesSearchItem } from "~/features/platform/server-series"
+import { useAnimatedPresence } from "~/hooks/use-animated-presence"
 
 export function HeaderSearch({ locale }: { locale: Locale }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const [results, setResults] = useState<PublicSeriesSearchItem[]>([])
+  const [loading, setLoading] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
-  const results = useMemo(
-    () =>
-      query.trim()
-        ? filterSeries(publicSeries, { q: query }, locale).slice(0, 6)
-        : publicSeries.slice(0, 4),
-    [locale, query],
-  )
+  const { motionState, rendered } = useAnimatedPresence(open)
   const detailedHref = `${paths.discover(locale)}${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`
 
   useEffect(() => {
@@ -39,6 +36,36 @@ export function HeaderSearch({ locale }: { locale: Locale }) {
     }
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+    const controller = new AbortController()
+    setLoading(true)
+    const timer = window.setTimeout(() => {
+      const parameters = new URLSearchParams({
+        locale,
+        q: query.trim(),
+      })
+      void fetch(`/api/platform/series-search?${parameters}`, {
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          const body = (await response.json()) as {
+            results?: PublicSeriesSearchItem[]
+          }
+          setResults(response.ok ? (body.results ?? []) : [])
+        })
+        .catch((error) => {
+          if (!(error instanceof DOMException && error.name === "AbortError"))
+            setResults([])
+        })
+        .finally(() => setLoading(false))
+    }, 120)
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [locale, open, query])
+
   return (
     <div className="relative" ref={root}>
       <button
@@ -54,12 +81,13 @@ export function HeaderSearch({ locale }: { locale: Locale }) {
           <Search aria-hidden="true" size={19} />
         )}
       </button>
-      {open ? (
+      {rendered ? (
         <section
           aria-label={
             locale === "tr" ? "Canlı seri araması" : "Live series search"
           }
           className="-translate-x-1/2 fixed top-24 left-1/2 z-[80] w-[min(26rem,calc(100vw-2rem))] border border-nv-border bg-surface p-3 shadow-2xl sm:absolute sm:top-14 sm:right-0 sm:left-auto sm:translate-x-0"
+          data-popup-motion={motionState}
         >
           <div className="relative">
             <Search
@@ -84,7 +112,11 @@ export function HeaderSearch({ locale }: { locale: Locale }) {
             />
           </div>
           <div className="mt-2 max-h-[min(26rem,60vh)] overflow-y-auto">
-            {results.length ? (
+            {loading && !results.length ? (
+              <p className="p-6 text-center text-nv-muted-foreground text-sm">
+                {locale === "tr" ? "Seriler aranıyor…" : "Searching series…"}
+              </p>
+            ) : results.length ? (
               <ul className="divide-y divide-nv-border">
                 {results.map((series) => (
                   <li key={series.id}>
@@ -102,10 +134,11 @@ export function HeaderSearch({ locale }: { locale: Locale }) {
                       />
                       <span className="min-w-0">
                         <strong className="block truncate text-sm">
-                          {series.localizations[locale].title}
+                          {series.title}
                         </strong>
                         <small className="block truncate text-nv-muted-foreground">
-                          {series.type.replace("_", " ")} · {series.genres[0]}
+                          {series.type.replace("_", " ")}
+                          {series.genre ? ` · ${series.genre}` : ""}
                         </small>
                       </span>
                       <ArrowRight aria-hidden="true" size={17} />

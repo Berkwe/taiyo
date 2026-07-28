@@ -5,7 +5,6 @@ import { notFound } from "next/navigation"
 import { SectionHeader } from "~/components/platform/content"
 import { ContinueReadingCard } from "~/components/platform/continue-reading-card"
 import { SeriesCard } from "~/components/platform/series-card"
-import { publicSeries } from "~/features/platform/catalog"
 import { copy } from "~/features/platform/copy"
 import { isLocale, locales } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
@@ -15,6 +14,7 @@ import {
   localeAlternates,
   pageMetadata,
 } from "~/features/platform/seo"
+import { getPublicSeries } from "~/features/platform/server-series"
 import { siteConfig } from "~/site-config"
 
 export function generateStaticParams() {
@@ -53,6 +53,7 @@ export default async function HomePage({
   const { locale } = await params
   if (!isLocale(locale)) notFound()
   const t = copy[locale]
+  const publicSeries = await getPublicSeries()
   const latest = [...publicSeries].sort((a, b) =>
     b.updatedAt.localeCompare(a.updatedAt),
   )
@@ -69,7 +70,7 @@ export default async function HomePage({
             "@type": "Organization",
             name: siteConfig.name,
             url: absoluteUrl(paths.home(locale)),
-            logo: absoluteUrl("/novorascans-logo.png"),
+            logo: absoluteUrl("/assets/brand/novora-brand-mark.svg"),
           },
           {
             "@context": "https://schema.org",

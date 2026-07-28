@@ -4,6 +4,6 @@ import {
   xmlResponse,
 } from "~/features/platform/sitemap"
 
-export function GET() {
-  return xmlResponse(sitemapXml(chapterSitemapEntries()))
+export async function GET() {
+  return xmlResponse(sitemapXml(await chapterSitemapEntries()))
 }

@@ -6,7 +6,7 @@ type Props = Omit<ImageProps, "src"> & { src?: string | null }
 
 export const Avatar = ({ src, className, ...props }: Props) => {
   if (src) {
-    return <Image src={src} className={className} {...props} />
+    return <Image src={src} className={className} unoptimized {...props} />
   }
 
   return (

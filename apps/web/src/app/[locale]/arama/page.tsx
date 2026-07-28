@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { CatalogPage } from "~/components/platform/catalog-page"
 import type { CatalogFilters } from "~/features/platform/catalog"
 import { pageMetadata } from "~/features/platform/seo"
+import { getPublicSeries } from "~/features/platform/server-series"
 
 export const metadata: Metadata = pageMetadata({
   title: "Seri ara",
@@ -20,5 +21,12 @@ export default async function SearchPage({
   searchParams: Promise<CatalogFilters>
 }) {
   if ((await params).locale !== "tr") notFound()
-  return <CatalogPage filters={await searchParams} locale="tr" searchOnly />
+  return (
+    <CatalogPage
+      filters={await searchParams}
+      locale="tr"
+      searchOnly
+      series={await getPublicSeries()}
+    />
+  )
 }

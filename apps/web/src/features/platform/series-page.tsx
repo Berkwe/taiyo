@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { SeriesDetail } from "~/components/platform/series-detail"
 import { isLocale, type Locale } from "./domain"
-import { getSeries } from "./fixtures"
 import { paths } from "./paths"
 import { localeAlternates, metadataTitle, pageMetadata } from "./seo"
+import { getPublicSeriesBySlug, getPublicSeriesSlugs } from "./server-series"
 
 export async function seriesMetadata({
   locale,
@@ -13,7 +13,7 @@ export async function seriesMetadata({
   locale: Locale
   slug: string
 }): Promise<Metadata> {
-  const series = getSeries(slug)
+  const series = await getPublicSeriesBySlug(slug)
   if (!series) return {}
   const localized = series.localizations[locale]
   return pageMetadata({
@@ -37,7 +37,10 @@ export async function SeriesPage({
   expectedLocale: Locale
 }) {
   const { locale, slug } = await params
-  const series = getSeries(slug)
+  const [series, randomSlugs] = await Promise.all([
+    getPublicSeriesBySlug(slug),
+    getPublicSeriesSlugs(),
+  ])
   if (
     !isLocale(locale) ||
     locale !== expectedLocale ||
@@ -46,5 +49,11 @@ export async function SeriesPage({
   ) {
     notFound()
   }
-  return <SeriesDetail locale={locale} series={series} />
+  return (
+    <SeriesDetail
+      locale={locale}
+      randomSeriesHrefs={randomSlugs.map((item) => paths.series(locale, item))}
+      series={series}
+    />
+  )
 }
