@@ -1,0 +1,152 @@
+[
+  {
+    "key": "demo/reader/page-1.svg",
+    "size": 499,
+    "sha256": "d632d191baa57b1b964b41cc73cb7aecb5d773a66fdaa9a4136c3fb567c383bf",
+    "mime": "application/octet-stream",
+    "owner": {
+      "relation": "release",
+      "id": "d847c8b5-d0d0-4fe4-b89e-30ce12b98692"
+    }
+  },
+  {
+    "key": "demo/reader/page-2.svg",
+    "size": 490,
+    "sha256": "d44066b386b117278f13834a62a14f44d59c43b67866b4e44bbd103e1f2581d4",
+    "mime": "application/octet-stream",
+    "owner": {
+      "relation": "release",
+      "id": "d847c8b5-d0d0-4fe4-b89e-30ce12b98692"
+    }
+  },
+  {
+    "key": "demo/reader/page-3.svg",
+    "size": 407,
+    "sha256": "aaf70e8b8b930762a4f433b10bd3c4e328808e759378a47405c86d9e7f8c6773",
+    "mime": "application/octet-stream",
+    "owner": {
+      "relation": "release",
+      "id": "d847c8b5-d0d0-4fe4-b89e-30ce12b98692"
+    }
+  },
+  {
+    "key": "demo/reader/page-4.svg",
+    "size": 381,
+    "sha256": "b8ec9fa2455656cd4ac4ca0829913e9a622e7de716d8567722cf20ede5e2b658",
+    "mime": "application/octet-stream",
+    "owner": {
+      "relation": "release",
+      "id": "d847c8b5-d0d0-4fe4-b89e-30ce12b98692"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/banner.jpg",
+    "size": 162455,
+    "sha256": "97e95ac04805014c613687cbfdf27901d53f10b4c1c5b44ecd81bf80fe4b0510",
+    "mime": "image/jpeg",
+    "owner": {
+      "relation": "series",
+      "id": "019f9000-0000-7000-8000-000000000001"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/1/page-1.png",
+    "size": 2454660,
+    "sha256": "d446b3aa5b80073461ac1a186c7a9d5a70fac70c2311141cd2ea6363b711bff1",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000210"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/1/page-2.png",
+    "size": 2528980,
+    "sha256": "bd484c8378f1d2fe56af8a87d001080e1b0d8749fa7950c816c0d3704dc44cc1",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000211"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/1/page-3.png",
+    "size": 2333095,
+    "sha256": "a0305741bbd4fe603bcc1cb2af4d5910d3581f44780797a80ee1d89991188b45",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000211"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/2/page-1.png",
+    "size": 2454660,
+    "sha256": "d446b3aa5b80073461ac1a186c7a9d5a70fac70c2311141cd2ea6363b711bff1",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000221"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/2/page-2.png",
+    "size": 2528980,
+    "sha256": "bd484c8378f1d2fe56af8a87d001080e1b0d8749fa7950c816c0d3704dc44cc1",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000221"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/2/page-3.png",
+    "size": 2333095,
+    "sha256": "a0305741bbd4fe603bcc1cb2af4d5910d3581f44780797a80ee1d89991188b45",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000221"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/3/page-1.png",
+    "size": 2454660,
+    "sha256": "d446b3aa5b80073461ac1a186c7a9d5a70fac70c2311141cd2ea6363b711bff1",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000231"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/3/page-2.png",
+    "size": 2528980,
+    "sha256": "bd484c8378f1d2fe56af8a87d001080e1b0d8749fa7950c816c0d3704dc44cc1",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000231"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/chapters/3/page-3.png",
+    "size": 2333095,
+    "sha256": "a0305741bbd4fe603bcc1cb2af4d5910d3581f44780797a80ee1d89991188b45",
+    "mime": "image/png",
+    "owner": {
+      "relation": "release",
+      "id": "019f9000-0000-7000-8000-000000000231"
+    }
+  },
+  {
+    "key": "demo/yildiz-postanesi/cover.png",
+    "size": 2390712,
+    "sha256": "a2709ce2e80256401bff8104fad7e34b8d0b5329d795c1c2a94864e96363ddfa",
+    "mime": "image/png",
+    "owner": {
+      "relation": "series",
+      "id": "019f9000-0000-7000-8000-000000000001"
+    }
+  }
+]
