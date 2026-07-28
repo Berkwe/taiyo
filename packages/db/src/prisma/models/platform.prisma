@@ -153,6 +153,7 @@ model PlatformChapter {
   volumeNumber        String?
   sortKey             Int
   canonicalSlug       String
+  thumbnailStorageKey String?
   originalPublishedAt DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -161,11 +162,34 @@ model PlatformChapter {
   series        Series                @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   seriesId      String                @db.Uuid
   localizations ChapterLocalization[]
+  sources       ChapterSource[]
   releases      ChapterRelease[]
 
   @@unique([seriesId, chapterNumber])
   @@unique([seriesId, canonicalSlug])
   @@index([seriesId, sortKey])
+}
+
+model ChapterSource {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform     SourcePlatform
+  language     Languages
+  displayLabel String?
+  description  String
+  priority     Int            @default(0)
+  isDefault    Boolean        @default(false)
+  sourceUrl    String?
+  externalId   String?
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  chapter   PlatformChapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapterId String           @db.Uuid
+  releases  ChapterRelease[]
+
+  @@index([chapterId, language, isActive, priority])
+  @@index([platform, externalId])
 }
 
 model ChapterLocalization {
@@ -215,32 +239,37 @@ model ReleaseGroup {
 }
 
 model ChapterRelease {
-  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                      String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   targetLanguage          Languages
   sourceLanguage          Languages
-  revision                Int           @default(1)
-  status                  ReleaseStatus @default(DRAFT)
+  revision                Int                    @default(1)
+  status                  ReleaseStatus          @default(DRAFT)
   publishedAt             DateTime?
-  humanReviewed           Boolean       @default(false)
-  glossaryUsed            Boolean       @default(false)
-  characterMemoryUsed     Boolean       @default(false)
+  humanReviewed           Boolean                @default(false)
+  glossaryUsed            Boolean                @default(false)
+  characterMemoryUsed     Boolean                @default(false)
   translationQualityScore Int?
   ocrQualityScore         Int?
   cleanupQualityScore     Int?
   overallQualityScore     Int?
   internalEngineName      String?
   internalEngineVersion   String?
-  pageCount               Int           @default(0)
+  pageCount               Int                    @default(0)
   storagePrefix           String?
-  isCanonicalForLanguage  Boolean       @default(false)
-  isPublic                Boolean       @default(false)
-  isIndexable             Boolean       @default(false)
+  qualityTier             TranslationQualityTier @default(BALANCED)
+  isActive                Boolean                @default(true)
+  pipelineVersion         String?
+  isCanonicalForLanguage  Boolean                @default(false)
+  isPublic                Boolean                @default(false)
+  isIndexable             Boolean                @default(false)
   deletedAt               DateTime?
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
 
   chapter              PlatformChapter         @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   chapterId            String                  @db.Uuid
+  source               ChapterSource?          @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  sourceId             String?                 @db.Uuid
   translationProfile   TranslationProfile      @relation(fields: [translationProfileId], references: [id])
   translationProfileId String                  @db.Uuid
   releaseGroup         ReleaseGroup?           @relation(fields: [releaseGroupId], references: [id])
@@ -250,8 +279,9 @@ model ChapterRelease {
   reports              ContentReport[]
   notifications        SiteNotification[]
 
-  @@unique([chapterId, targetLanguage, translationProfileId, revision], map: "ChapterRelease_chapterId_targetLanguage_translationProfileId_re")
+  @@unique([chapterId, sourceId, targetLanguage, translationProfileId, revision], map: "ChapterRelease_chapter_source_language_profile_revision_key")
   @@index([chapterId, targetLanguage, isPublic, publishedAt], map: "ChapterRelease_chapterId_targetLanguage_isPublic_publishedAt_id")
+  @@index([sourceId, targetLanguage, isActive])
   @@index([deletedAt, status])
 }
 
@@ -336,6 +366,7 @@ model NotificationPreference {
   followedSeriesUpdates Boolean  @default(true)
   reportStatusUpdates   Boolean  @default(true)
   accountUpdates        Boolean  @default(true)
+  translationUpdates    Boolean  @default(true)
   updatedAt             DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -446,6 +477,18 @@ enum ReleaseStatus {
   ARCHIVED
 }
 
+enum SourcePlatform {
+  NAVER
+  WEBTOONS
+  KAKAO
+  OTHER
+}
+
+enum TranslationQualityTier {
+  BALANCED
+  PREMIUM
+}
+
 enum SlugEntityType {
   SERIES
   CHAPTER
@@ -469,6 +512,7 @@ enum SiteNotificationType {
   FOLLOWED_SERIES_RELEASE
   REPORT_STATUS
   ACCOUNT_UPDATE
+  TRANSLATION_CAMPAIGN
 }
 
 enum RevisionEntityType {
@@ -477,6 +521,8 @@ enum RevisionEntityType {
   RELEASE
   REPORT
   USER
+  TRANSLATION_CAMPAIGN
+  CATALOG_SOURCE
 }
 
 enum RevisionAction {

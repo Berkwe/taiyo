@@ -126,9 +126,15 @@ export type SeriesTagScalarFieldEnum = z.infer<typeof SeriesTagScalarFieldEnumSc
 
 // File: PlatformChapterScalarFieldEnum.schema.ts
 
-export const PlatformChapterScalarFieldEnumSchema = z.enum(['id', 'chapterNumber', 'volumeNumber', 'sortKey', 'canonicalSlug', 'originalPublishedAt', 'createdAt', 'updatedAt', 'deletedAt', 'seriesId'])
+export const PlatformChapterScalarFieldEnumSchema = z.enum(['id', 'chapterNumber', 'volumeNumber', 'sortKey', 'canonicalSlug', 'thumbnailStorageKey', 'originalPublishedAt', 'createdAt', 'updatedAt', 'deletedAt', 'seriesId'])
 
 export type PlatformChapterScalarFieldEnum = z.infer<typeof PlatformChapterScalarFieldEnumSchema>;
+
+// File: ChapterSourceScalarFieldEnum.schema.ts
+
+export const ChapterSourceScalarFieldEnumSchema = z.enum(['id', 'platform', 'language', 'displayLabel', 'description', 'priority', 'isDefault', 'sourceUrl', 'externalId', 'isActive', 'createdAt', 'updatedAt', 'chapterId'])
+
+export type ChapterSourceScalarFieldEnum = z.infer<typeof ChapterSourceScalarFieldEnumSchema>;
 
 // File: ChapterLocalizationScalarFieldEnum.schema.ts
 
@@ -150,7 +156,7 @@ export type ReleaseGroupScalarFieldEnum = z.infer<typeof ReleaseGroupScalarField
 
 // File: ChapterReleaseScalarFieldEnum.schema.ts
 
-export const ChapterReleaseScalarFieldEnumSchema = z.enum(['id', 'targetLanguage', 'sourceLanguage', 'revision', 'status', 'publishedAt', 'humanReviewed', 'glossaryUsed', 'characterMemoryUsed', 'translationQualityScore', 'ocrQualityScore', 'cleanupQualityScore', 'overallQualityScore', 'internalEngineName', 'internalEngineVersion', 'pageCount', 'storagePrefix', 'isCanonicalForLanguage', 'isPublic', 'isIndexable', 'deletedAt', 'createdAt', 'updatedAt', 'chapterId', 'translationProfileId', 'releaseGroupId'])
+export const ChapterReleaseScalarFieldEnumSchema = z.enum(['id', 'targetLanguage', 'sourceLanguage', 'revision', 'status', 'publishedAt', 'humanReviewed', 'glossaryUsed', 'characterMemoryUsed', 'translationQualityScore', 'ocrQualityScore', 'cleanupQualityScore', 'overallQualityScore', 'internalEngineName', 'internalEngineVersion', 'pageCount', 'storagePrefix', 'qualityTier', 'isActive', 'pipelineVersion', 'isCanonicalForLanguage', 'isPublic', 'isIndexable', 'deletedAt', 'createdAt', 'updatedAt', 'chapterId', 'sourceId', 'translationProfileId', 'releaseGroupId'])
 
 export type ChapterReleaseScalarFieldEnum = z.infer<typeof ChapterReleaseScalarFieldEnumSchema>;
 
@@ -180,7 +186,7 @@ export type SeriesFollowScalarFieldEnum = z.infer<typeof SeriesFollowScalarField
 
 // File: NotificationPreferenceScalarFieldEnum.schema.ts
 
-export const NotificationPreferenceScalarFieldEnumSchema = z.enum(['followedSeriesUpdates', 'reportStatusUpdates', 'accountUpdates', 'updatedAt', 'userId'])
+export const NotificationPreferenceScalarFieldEnumSchema = z.enum(['followedSeriesUpdates', 'reportStatusUpdates', 'accountUpdates', 'translationUpdates', 'updatedAt', 'userId'])
 
 export type NotificationPreferenceScalarFieldEnum = z.infer<typeof NotificationPreferenceScalarFieldEnumSchema>;
 
@@ -208,9 +214,87 @@ export const TaskScalarFieldEnumSchema = z.enum(['id', 'createdAt', 'updatedAt',
 
 export type TaskScalarFieldEnum = z.infer<typeof TaskScalarFieldEnumSchema>;
 
+// File: CatalogSeriesScalarFieldEnum.schema.ts
+
+export const CatalogSeriesScalarFieldEnumSchema = z.enum(['id', 'providerKey', 'externalSeriesId', 'canonicalKey', 'canonicalSeriesId', 'title', 'originalTitle', 'alternativeTitles', 'description', 'coverPath', 'publicationStatus', 'isActive', 'createdAt', 'updatedAt'])
+
+export type CatalogSeriesScalarFieldEnum = z.infer<typeof CatalogSeriesScalarFieldEnumSchema>;
+
+// File: CatalogSourceEditionScalarFieldEnum.schema.ts
+
+export const CatalogSourceEditionScalarFieldEnumSchema = z.enum(['id', 'catalogSeriesId', 'externalEditionId', 'sourceUrl', 'backendPlatform', 'sourceLanguage', 'publicSourceLabel', 'publicDescription', 'priority', 'lastUpdatedAt', 'isActive', 'createdAt', 'updatedAt'])
+
+export type CatalogSourceEditionScalarFieldEnum = z.infer<typeof CatalogSourceEditionScalarFieldEnumSchema>;
+
+// File: CatalogSourceChapterScalarFieldEnum.schema.ts
+
+export const CatalogSourceChapterScalarFieldEnumSchema = z.enum(['id', 'sourceEditionId', 'externalChapterId', 'chapterNumber', 'sortKey', 'title', 'publishedAt', 'isAvailable', 'createdAt', 'updatedAt'])
+
+export type CatalogSourceChapterScalarFieldEnum = z.infer<typeof CatalogSourceChapterScalarFieldEnumSchema>;
+
+// File: TranslationSourcePreferenceScalarFieldEnum.schema.ts
+
+export const TranslationSourcePreferenceScalarFieldEnumSchema = z.enum(['userId', 'canonicalKey', 'sourceEditionId', 'createdAt', 'updatedAt'])
+
+export type TranslationSourcePreferenceScalarFieldEnum = z.infer<typeof TranslationSourcePreferenceScalarFieldEnumSchema>;
+
+// File: TranslationCampaignScalarFieldEnum.schema.ts
+
+export const TranslationCampaignScalarFieldEnumSchema = z.enum(['id', 'catalogSeriesId', 'sourceEditionId', 'sourceLanguage', 'outputLanguage', 'qualityTier', 'kind', 'targetCredits', 'fundedCredits', 'status', 'expiresAt', 'createdById', 'createdAt', 'updatedAt', 'fundedAt', 'completedAt', 'publicAt', 'translationJobId', 'idempotencyKey'])
+
+export type TranslationCampaignScalarFieldEnum = z.infer<typeof TranslationCampaignScalarFieldEnumSchema>;
+
+// File: TranslationCampaignChapterScalarFieldEnum.schema.ts
+
+export const TranslationCampaignChapterScalarFieldEnumSchema = z.enum(['campaignId', 'sourceChapterId', 'activeKey', 'allocatedCredits', 'status', 'externalTranslationJobId', 'externalPreviousActiveKey', 'externalPreviousCampaignStatus', 'completedAt'])
+
+export type TranslationCampaignChapterScalarFieldEnum = z.infer<typeof TranslationCampaignChapterScalarFieldEnumSchema>;
+
+// File: TranslationContributionScalarFieldEnum.schema.ts
+
+export const TranslationContributionScalarFieldEnumSchema = z.enum(['id', 'campaignId', 'userId', 'credits', 'refundedCredits', 'status', 'createdAt', 'refundedAt', 'idempotencyKey'])
+
+export type TranslationContributionScalarFieldEnum = z.infer<typeof TranslationContributionScalarFieldEnumSchema>;
+
+// File: CreditAccountScalarFieldEnum.schema.ts
+
+export const CreditAccountScalarFieldEnumSchema = z.enum(['userId', 'cachedBalance', 'createdAt', 'updatedAt'])
+
+export type CreditAccountScalarFieldEnum = z.infer<typeof CreditAccountScalarFieldEnumSchema>;
+
+// File: CreditTransactionScalarFieldEnum.schema.ts
+
+export const CreditTransactionScalarFieldEnumSchema = z.enum(['id', 'userId', 'amount', 'type', 'status', 'referenceType', 'referenceId', 'idempotencyKey', 'metadata', 'createdAt'])
+
+export type CreditTransactionScalarFieldEnum = z.infer<typeof CreditTransactionScalarFieldEnumSchema>;
+
+// File: TranslationJobScalarFieldEnum.schema.ts
+
+export const TranslationJobScalarFieldEnumSchema = z.enum(['id', 'campaignId', 'status', 'provider', 'payload', 'failureReason', 'idempotencyKey', 'createdAt', 'updatedAt', 'completedAt'])
+
+export type TranslationJobScalarFieldEnum = z.infer<typeof TranslationJobScalarFieldEnumSchema>;
+
+// File: BatchTranslationRequestScalarFieldEnum.schema.ts
+
+export const BatchTranslationRequestScalarFieldEnumSchema = z.enum(['id', 'userId', 'catalogSeriesId', 'sourceEditionId', 'outputLanguage', 'qualityTier', 'status', 'requestedCount', 'eligibleCount', 'excludedCount', 'totalCredits', 'idempotencyKey', 'createdAt', 'updatedAt', 'completedAt'])
+
+export type BatchTranslationRequestScalarFieldEnum = z.infer<typeof BatchTranslationRequestScalarFieldEnumSchema>;
+
+// File: BatchTranslationRequestItemScalarFieldEnum.schema.ts
+
+export const BatchTranslationRequestItemScalarFieldEnumSchema = z.enum(['id', 'batchRequestId', 'sourceChapterId', 'chapterNumber', 'status', 'credits', 'exclusionReason', 'campaignId', 'translationJobId', 'createdAt', 'updatedAt', 'completedAt'])
+
+export type BatchTranslationRequestItemScalarFieldEnum = z.infer<typeof BatchTranslationRequestItemScalarFieldEnumSchema>;
+
+// File: TranslationEarlyAccessGrantScalarFieldEnum.schema.ts
+
+export const TranslationEarlyAccessGrantScalarFieldEnumSchema = z.enum(['id', 'userId', 'sourceChapterId', 'translationJobId', 'expiresAt', 'createdAt'])
+
+export type TranslationEarlyAccessGrantScalarFieldEnum = z.infer<typeof TranslationEarlyAccessGrantScalarFieldEnumSchema>;
+
 // File: UserScalarFieldEnum.schema.ts
 
-export const UserScalarFieldEnumSchema = z.enum(['id', 'createdAt', 'updatedAt', 'name', 'username', 'displayUsername', 'email', 'emailVerified', 'normalizedEmail', 'image', 'banned', 'banReason', 'banExpires', 'role', 'settings'])
+export const UserScalarFieldEnumSchema = z.enum(['id', 'createdAt', 'updatedAt', 'name', 'username', 'displayUsername', 'email', 'emailVerified', 'normalizedEmail', 'image', 'banned', 'banReason', 'banExpires', 'deletedAt', 'role', 'settings'])
 
 export type UserScalarFieldEnum = z.infer<typeof UserScalarFieldEnumSchema>;
 
@@ -376,6 +460,12 @@ export const CreatorRoleSchema = z.enum(['AUTHOR', 'ARTIST', 'WRITER', 'COLORIST
 
 export type CreatorRole = z.infer<typeof CreatorRoleSchema>;
 
+// File: SourcePlatform.schema.ts
+
+export const SourcePlatformSchema = z.enum(['NAVER', 'WEBTOONS', 'KAKAO', 'OTHER'])
+
+export type SourcePlatform = z.infer<typeof SourcePlatformSchema>;
+
 // File: ReleaseGroupType.schema.ts
 
 export const ReleaseGroupTypeSchema = z.enum(['OFFICIAL', 'INTERNAL', 'COMMUNITY', 'PARTNER'])
@@ -387,6 +477,12 @@ export type ReleaseGroupType = z.infer<typeof ReleaseGroupTypeSchema>;
 export const ReleaseStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'])
 
 export type ReleaseStatus = z.infer<typeof ReleaseStatusSchema>;
+
+// File: TranslationQualityTier.schema.ts
+
+export const TranslationQualityTierSchema = z.enum(['BALANCED', 'PREMIUM'])
+
+export type TranslationQualityTier = z.infer<typeof TranslationQualityTierSchema>;
 
 // File: ReportType.schema.ts
 
@@ -402,13 +498,13 @@ export type ReportStatus = z.infer<typeof ReportStatusSchema>;
 
 // File: SiteNotificationType.schema.ts
 
-export const SiteNotificationTypeSchema = z.enum(['FOLLOWED_SERIES_RELEASE', 'REPORT_STATUS', 'ACCOUNT_UPDATE'])
+export const SiteNotificationTypeSchema = z.enum(['FOLLOWED_SERIES_RELEASE', 'REPORT_STATUS', 'ACCOUNT_UPDATE', 'TRANSLATION_CAMPAIGN'])
 
 export type SiteNotificationType = z.infer<typeof SiteNotificationTypeSchema>;
 
 // File: RevisionEntityType.schema.ts
 
-export const RevisionEntityTypeSchema = z.enum(['SERIES', 'CHAPTER', 'RELEASE', 'REPORT', 'USER'])
+export const RevisionEntityTypeSchema = z.enum(['SERIES', 'CHAPTER', 'RELEASE', 'REPORT', 'USER', 'TRANSLATION_CAMPAIGN', 'CATALOG_SOURCE'])
 
 export type RevisionEntityType = z.infer<typeof RevisionEntityTypeSchema>;
 
@@ -435,6 +531,66 @@ export type TaskType = z.infer<typeof TaskTypeSchema>;
 export const TaskStatusSchema = z.enum(['PENDING', 'DOWNLOADING', 'UPLOADING', 'FINISHED', 'FAILED'])
 
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
+
+// File: CatalogPublicationStatus.schema.ts
+
+export const CatalogPublicationStatusSchema = z.enum(['ONGOING', 'COMPLETED', 'HIATUS'])
+
+export type CatalogPublicationStatus = z.infer<typeof CatalogPublicationStatusSchema>;
+
+// File: TranslationCampaignKind.schema.ts
+
+export const TranslationCampaignKindSchema = z.enum(['COMMUNITY_PACKAGE', 'INSTANT', 'BATCH_INSTANT'])
+
+export type TranslationCampaignKind = z.infer<typeof TranslationCampaignKindSchema>;
+
+// File: TranslationCampaignStatus.schema.ts
+
+export const TranslationCampaignStatusSchema = z.enum(['FUNDING', 'FUNDED', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'EXPIRED', 'CANCELLED', 'REFUNDED'])
+
+export type TranslationCampaignStatus = z.infer<typeof TranslationCampaignStatusSchema>;
+
+// File: TranslationCampaignChapterStatus.schema.ts
+
+export const TranslationCampaignChapterStatusSchema = z.enum(['PENDING', 'COMPLETED', 'COMPLETED_EXTERNALLY'])
+
+export type TranslationCampaignChapterStatus = z.infer<typeof TranslationCampaignChapterStatusSchema>;
+
+// File: TranslationContributionStatus.schema.ts
+
+export const TranslationContributionStatusSchema = z.enum(['COMMITTED', 'REFUNDED'])
+
+export type TranslationContributionStatus = z.infer<typeof TranslationContributionStatusSchema>;
+
+// File: CreditTransactionType.schema.ts
+
+export const CreditTransactionTypeSchema = z.enum(['PURCHASE', 'CAMPAIGN_CONTRIBUTION', 'CONTRIBUTION_REFUND', 'READING_REWARD', 'AD_REWARD', 'ADMIN_ADJUSTMENT'])
+
+export type CreditTransactionType = z.infer<typeof CreditTransactionTypeSchema>;
+
+// File: CreditTransactionStatus.schema.ts
+
+export const CreditTransactionStatusSchema = z.enum(['COMMITTED', 'REVERSED'])
+
+export type CreditTransactionStatus = z.infer<typeof CreditTransactionStatusSchema>;
+
+// File: TranslationJobStatus.schema.ts
+
+export const TranslationJobStatusSchema = z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED'])
+
+export type TranslationJobStatus = z.infer<typeof TranslationJobStatusSchema>;
+
+// File: BatchTranslationStatus.schema.ts
+
+export const BatchTranslationStatusSchema = z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'PARTIAL_FAILED', 'FAILED'])
+
+export type BatchTranslationStatus = z.infer<typeof BatchTranslationStatusSchema>;
+
+// File: BatchTranslationItemStatus.schema.ts
+
+export const BatchTranslationItemStatusSchema = z.enum(['EXCLUDED', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED'])
+
+export type BatchTranslationItemStatus = z.infer<typeof BatchTranslationItemStatusSchema>;
 
 // File: Roles.schema.ts
 
@@ -769,6 +925,7 @@ export const PlatformChapterSchema = z.object({
   volumeNumber: z.string().nullish(),
   sortKey: z.number().int(),
   canonicalSlug: z.string(),
+  thumbnailStorageKey: z.string().nullish(),
   originalPublishedAt: z.date().nullish(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -777,6 +934,27 @@ export const PlatformChapterSchema = z.object({
 });
 
 export type PlatformChapterType = z.infer<typeof PlatformChapterSchema>;
+
+
+// File: ChapterSource.schema.ts
+
+export const ChapterSourceSchema = z.object({
+  id: z.string(),
+  platform: SourcePlatformSchema,
+  language: LanguagesSchema,
+  displayLabel: z.string().nullish(),
+  description: z.string(),
+  priority: z.number().int(),
+  isDefault: z.boolean(),
+  sourceUrl: z.string().nullish(),
+  externalId: z.string().nullish(),
+  isActive: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  chapterId: z.string(),
+});
+
+export type ChapterSourceType = z.infer<typeof ChapterSourceSchema>;
 
 
 // File: ChapterLocalization.schema.ts
@@ -849,6 +1027,9 @@ export const ChapterReleaseSchema = z.object({
   internalEngineVersion: z.string().nullish(),
   pageCount: z.number().int(),
   storagePrefix: z.string().nullish(),
+  qualityTier: TranslationQualityTierSchema.default("BALANCED"),
+  isActive: z.boolean().default(true),
+  pipelineVersion: z.string().nullish(),
   isCanonicalForLanguage: z.boolean(),
   isPublic: z.boolean(),
   isIndexable: z.boolean(),
@@ -856,6 +1037,7 @@ export const ChapterReleaseSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   chapterId: z.string(),
+  sourceId: z.string().nullish(),
   translationProfileId: z.string(),
   releaseGroupId: z.string().nullish(),
 });
@@ -940,6 +1122,7 @@ export const NotificationPreferenceSchema = z.object({
   followedSeriesUpdates: z.boolean().default(true),
   reportStatusUpdates: z.boolean().default(true),
   accountUpdates: z.boolean().default(true),
+  translationUpdates: z.boolean().default(true),
   updatedAt: z.date(),
   userId: z.string(),
 });
@@ -1010,6 +1193,245 @@ export const TaskSchema = z.object({
 
 export type TaskModel = z.infer<typeof TaskSchema>;
 
+// File: CatalogSeries.schema.ts
+
+export const CatalogSeriesSchema = z.object({
+  id: z.string(),
+  providerKey: z.string(),
+  externalSeriesId: z.string(),
+  canonicalKey: z.string(),
+  canonicalSeriesId: z.string().nullish(),
+  title: z.string(),
+  originalTitle: z.string(),
+  alternativeTitles: z.array(z.string()),
+  description: z.string(),
+  coverPath: z.string(),
+  publicationStatus: CatalogPublicationStatusSchema,
+  isActive: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type CatalogSeriesType = z.infer<typeof CatalogSeriesSchema>;
+
+
+// File: CatalogSourceEdition.schema.ts
+
+export const CatalogSourceEditionSchema = z.object({
+  id: z.string(),
+  catalogSeriesId: z.string(),
+  externalEditionId: z.string(),
+  sourceUrl: z.string().nullish(),
+  backendPlatform: SourcePlatformSchema,
+  sourceLanguage: LanguagesSchema,
+  publicSourceLabel: z.string(),
+  publicDescription: z.string(),
+  priority: z.number().int(),
+  lastUpdatedAt: z.date().nullish(),
+  isActive: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type CatalogSourceEditionType = z.infer<typeof CatalogSourceEditionSchema>;
+
+
+// File: CatalogSourceChapter.schema.ts
+
+export const CatalogSourceChapterSchema = z.object({
+  id: z.string(),
+  sourceEditionId: z.string(),
+  externalChapterId: z.string(),
+  chapterNumber: z.string(),
+  sortKey: z.number().int(),
+  title: z.string().nullish(),
+  publishedAt: z.date().nullish(),
+  isAvailable: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type CatalogSourceChapterType = z.infer<typeof CatalogSourceChapterSchema>;
+
+
+// File: TranslationSourcePreference.schema.ts
+
+export const TranslationSourcePreferenceSchema = z.object({
+  userId: z.string(),
+  canonicalKey: z.string(),
+  sourceEditionId: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type TranslationSourcePreferenceType = z.infer<typeof TranslationSourcePreferenceSchema>;
+
+
+// File: TranslationCampaign.schema.ts
+
+export const TranslationCampaignSchema = z.object({
+  id: z.string(),
+  catalogSeriesId: z.string(),
+  sourceEditionId: z.string(),
+  sourceLanguage: LanguagesSchema,
+  outputLanguage: LanguagesSchema,
+  qualityTier: TranslationQualityTierSchema,
+  kind: TranslationCampaignKindSchema.default("COMMUNITY_PACKAGE"),
+  targetCredits: z.number().int(),
+  fundedCredits: z.number().int(),
+  status: TranslationCampaignStatusSchema.default("FUNDING"),
+  expiresAt: z.date().nullish(),
+  createdById: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  fundedAt: z.date().nullish(),
+  completedAt: z.date().nullish(),
+  publicAt: z.date().nullish(),
+  translationJobId: z.string().nullish(),
+  idempotencyKey: z.string(),
+});
+
+export type TranslationCampaignType = z.infer<typeof TranslationCampaignSchema>;
+
+
+// File: TranslationCampaignChapter.schema.ts
+
+export const TranslationCampaignChapterSchema = z.object({
+  campaignId: z.string(),
+  sourceChapterId: z.string(),
+  activeKey: z.string().nullish(),
+  allocatedCredits: z.number().int(),
+  status: TranslationCampaignChapterStatusSchema.default("PENDING"),
+  externalTranslationJobId: z.string().nullish(),
+  externalPreviousActiveKey: z.string().nullish(),
+  externalPreviousCampaignStatus: TranslationCampaignStatusSchema.nullish(),
+  completedAt: z.date().nullish(),
+});
+
+export type TranslationCampaignChapterType = z.infer<typeof TranslationCampaignChapterSchema>;
+
+
+// File: TranslationContribution.schema.ts
+
+export const TranslationContributionSchema = z.object({
+  id: z.string(),
+  campaignId: z.string(),
+  userId: z.string(),
+  credits: z.number().int(),
+  refundedCredits: z.number().int(),
+  status: TranslationContributionStatusSchema.default("COMMITTED"),
+  createdAt: z.date(),
+  refundedAt: z.date().nullish(),
+  idempotencyKey: z.string(),
+});
+
+export type TranslationContributionType = z.infer<typeof TranslationContributionSchema>;
+
+
+// File: CreditAccount.schema.ts
+
+export const CreditAccountSchema = z.object({
+  userId: z.string(),
+  cachedBalance: z.number().int(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type CreditAccountType = z.infer<typeof CreditAccountSchema>;
+
+
+// File: CreditTransaction.schema.ts
+
+export const CreditTransactionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  amount: z.number().int(),
+  type: CreditTransactionTypeSchema,
+  status: CreditTransactionStatusSchema.default("COMMITTED"),
+  referenceType: z.string().nullish(),
+  referenceId: z.string().nullish(),
+  idempotencyKey: z.string(),
+  metadata: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10").nullish(),
+  createdAt: z.date(),
+});
+
+export type CreditTransactionModel = z.infer<typeof CreditTransactionSchema>;
+
+// File: TranslationJob.schema.ts
+
+export const TranslationJobSchema = z.object({
+  id: z.string(),
+  campaignId: z.string(),
+  status: TranslationJobStatusSchema.default("QUEUED"),
+  provider: z.string().default("mandown"),
+  payload: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10"),
+  failureReason: z.string().nullish(),
+  idempotencyKey: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  completedAt: z.date().nullish(),
+});
+
+export type TranslationJobType = z.infer<typeof TranslationJobSchema>;
+
+
+// File: BatchTranslationRequest.schema.ts
+
+export const BatchTranslationRequestSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  catalogSeriesId: z.string(),
+  sourceEditionId: z.string(),
+  outputLanguage: LanguagesSchema,
+  qualityTier: TranslationQualityTierSchema,
+  status: BatchTranslationStatusSchema.default("QUEUED"),
+  requestedCount: z.number().int(),
+  eligibleCount: z.number().int(),
+  excludedCount: z.number().int(),
+  totalCredits: z.number().int(),
+  idempotencyKey: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  completedAt: z.date().nullish(),
+});
+
+export type BatchTranslationRequestType = z.infer<typeof BatchTranslationRequestSchema>;
+
+
+// File: BatchTranslationRequestItem.schema.ts
+
+export const BatchTranslationRequestItemSchema = z.object({
+  id: z.string(),
+  batchRequestId: z.string(),
+  sourceChapterId: z.string(),
+  chapterNumber: z.string(),
+  status: BatchTranslationItemStatusSchema,
+  credits: z.number().int(),
+  exclusionReason: z.string().nullish(),
+  campaignId: z.string().nullish(),
+  translationJobId: z.string().nullish(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  completedAt: z.date().nullish(),
+});
+
+export type BatchTranslationRequestItemType = z.infer<typeof BatchTranslationRequestItemSchema>;
+
+
+// File: TranslationEarlyAccessGrant.schema.ts
+
+export const TranslationEarlyAccessGrantSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  sourceChapterId: z.string(),
+  translationJobId: z.string(),
+  expiresAt: z.date(),
+  createdAt: z.date(),
+});
+
+export type TranslationEarlyAccessGrantType = z.infer<typeof TranslationEarlyAccessGrantSchema>;
+
+
 // File: User.schema.ts
 
 export const UserSchema = z.object({
@@ -1026,8 +1448,9 @@ export const UserSchema = z.object({
   banned: z.boolean().nullish(),
   banReason: z.string().nullish(),
   banExpires: z.date().nullish(),
+  deletedAt: z.date().nullish(),
   role: RolesSchema.default("USER"),
-  settings: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10").default("{}"),
+  settings: z.unknown().refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > 10) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= 10; }, "JSON nesting depth exceeds maximum of 10").default({}),
 });
 
 export type UserType = z.infer<typeof UserSchema>;

@@ -1,0 +1,322 @@
+model CatalogSeries {
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerKey       String
+  externalSeriesId  String
+  canonicalKey      String
+  canonicalSeriesId String?                  @db.Uuid
+  title             String
+  originalTitle     String
+  alternativeTitles String[]
+  description       String
+  coverPath         String
+  publicationStatus CatalogPublicationStatus
+  isActive          Boolean                  @default(true)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  editions CatalogSourceEdition[]
+
+  @@unique([providerKey, externalSeriesId])
+  @@index([canonicalKey, isActive])
+}
+
+model CatalogSourceEdition {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  catalogSeriesId   String         @db.Uuid
+  externalEditionId String
+  sourceUrl         String?
+  backendPlatform   SourcePlatform
+  sourceLanguage    Languages
+  publicSourceLabel String
+  publicDescription String
+  priority          Int            @default(0)
+  lastUpdatedAt     DateTime?
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  catalogSeries CatalogSeries                 @relation(fields: [catalogSeriesId], references: [id], onDelete: Cascade)
+  chapters      CatalogSourceChapter[]
+  preferences   TranslationSourcePreference[]
+
+  @@unique([catalogSeriesId, externalEditionId])
+  @@index([catalogSeriesId, sourceLanguage, priority])
+}
+
+model CatalogSourceChapter {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceEditionId   String    @db.Uuid
+  externalChapterId String
+  chapterNumber     String
+  sortKey           Int
+  title             String?
+  publishedAt       DateTime?
+  isAvailable       Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  sourceEdition CatalogSourceEdition @relation(fields: [sourceEditionId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceEditionId, externalChapterId])
+  @@unique([sourceEditionId, chapterNumber])
+  @@index([sourceEditionId, sortKey])
+}
+
+model TranslationSourcePreference {
+  userId          String   @db.Uuid
+  canonicalKey    String
+  sourceEditionId String   @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceEdition CatalogSourceEdition @relation(fields: [sourceEditionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, canonicalKey])
+}
+
+model TranslationCampaign {
+  id               String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  catalogSeriesId  String
+  sourceEditionId  String
+  sourceLanguage   Languages
+  outputLanguage   Languages
+  qualityTier      TranslationQualityTier
+  kind             TranslationCampaignKind   @default(COMMUNITY_PACKAGE)
+  targetCredits    Int
+  fundedCredits    Int                       @default(0)
+  status           TranslationCampaignStatus @default(FUNDING)
+  expiresAt        DateTime?
+  createdById      String                    @db.Uuid
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  fundedAt         DateTime?
+  completedAt      DateTime?
+  publicAt         DateTime?
+  translationJobId String?                   @unique @db.Uuid
+  idempotencyKey   String                    @unique
+
+  createdBy     User                         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  chapters      TranslationCampaignChapter[]
+  contributions TranslationContribution[]
+  job           TranslationJob?
+  batchItem     BatchTranslationRequestItem?
+
+  @@index([status, createdAt])
+  @@index([catalogSeriesId, sourceEditionId])
+}
+
+model TranslationCampaignChapter {
+  campaignId                     String                           @db.Uuid
+  sourceChapterId                String
+  activeKey                      String?                          @unique
+  allocatedCredits               Int                              @default(0)
+  status                         TranslationCampaignChapterStatus @default(PENDING)
+  externalTranslationJobId       String?                          @unique @db.Uuid
+  externalPreviousActiveKey      String?
+  externalPreviousCampaignStatus TranslationCampaignStatus?
+  completedAt                    DateTime?
+
+  campaign               TranslationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  externalTranslationJob TranslationJob?     @relation("ExternalTranslationJob", fields: [externalTranslationJobId], references: [id], onDelete: SetNull)
+
+  @@id([campaignId, sourceChapterId])
+  @@index([sourceChapterId])
+}
+
+model TranslationContribution {
+  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignId      String                        @db.Uuid
+  userId          String                        @db.Uuid
+  credits         Int
+  refundedCredits Int                           @default(0)
+  status          TranslationContributionStatus @default(COMMITTED)
+  createdAt       DateTime                      @default(now())
+  refundedAt      DateTime?
+  idempotencyKey  String                        @unique
+
+  campaign TranslationCampaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([campaignId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model CreditAccount {
+  userId        String   @id @db.Uuid
+  cachedBalance Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreditTransaction {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String                  @db.Uuid
+  amount         Int
+  type           CreditTransactionType
+  status         CreditTransactionStatus @default(COMMITTED)
+  referenceType  String?
+  referenceId    String?
+  idempotencyKey String                  @unique
+  metadata       Json?
+  createdAt      DateTime                @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([referenceType, referenceId])
+}
+
+model TranslationJob {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignId     String               @unique @db.Uuid
+  status         TranslationJobStatus @default(QUEUED)
+  provider       String               @default("mandown")
+  payload        Json
+  failureReason  String?
+  idempotencyKey String               @unique
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  completedAt    DateTime?
+
+  campaign                    TranslationCampaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  externallyCompletedChapters TranslationCampaignChapter[]  @relation("ExternalTranslationJob")
+  earlyAccessGrants           TranslationEarlyAccessGrant[]
+  batchItem                   BatchTranslationRequestItem?
+}
+
+model BatchTranslationRequest {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String                 @db.Uuid
+  catalogSeriesId String
+  sourceEditionId String
+  outputLanguage  Languages
+  qualityTier     TranslationQualityTier
+  status          BatchTranslationStatus @default(QUEUED)
+  requestedCount  Int
+  eligibleCount   Int
+  excludedCount   Int
+  totalCredits    Int
+  idempotencyKey  String                 @unique
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  completedAt     DateTime?
+
+  user  User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items BatchTranslationRequestItem[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model BatchTranslationRequestItem {
+  id               String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchRequestId   String                     @db.Uuid
+  sourceChapterId  String
+  chapterNumber    String
+  status           BatchTranslationItemStatus
+  credits          Int                        @default(0)
+  exclusionReason  String?
+  campaignId       String?                    @unique @db.Uuid
+  translationJobId String?                    @unique @db.Uuid
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  completedAt      DateTime?
+
+  batchRequest   BatchTranslationRequest @relation(fields: [batchRequestId], references: [id], onDelete: Cascade)
+  campaign       TranslationCampaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  translationJob TranslationJob?         @relation(fields: [translationJobId], references: [id], onDelete: SetNull)
+
+  @@unique([batchRequestId, sourceChapterId])
+  @@index([batchRequestId, status])
+}
+
+model TranslationEarlyAccessGrant {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String   @db.Uuid
+  sourceChapterId  String
+  translationJobId String   @db.Uuid
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translationJob TranslationJob @relation(fields: [translationJobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceChapterId, translationJobId])
+  @@index([userId, expiresAt])
+  @@index([sourceChapterId, expiresAt])
+}
+
+enum CatalogPublicationStatus {
+  ONGOING
+  COMPLETED
+  HIATUS
+}
+
+enum TranslationCampaignStatus {
+  FUNDING
+  FUNDED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+enum TranslationCampaignKind {
+  COMMUNITY_PACKAGE
+  INSTANT
+  BATCH_INSTANT
+}
+
+enum BatchTranslationStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  PARTIAL_FAILED
+  FAILED
+}
+
+enum BatchTranslationItemStatus {
+  EXCLUDED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum TranslationCampaignChapterStatus {
+  PENDING
+  COMPLETED
+  COMPLETED_EXTERNALLY
+}
+
+enum TranslationContributionStatus {
+  COMMITTED
+  REFUNDED
+}
+
+enum CreditTransactionType {
+  PURCHASE
+  CAMPAIGN_CONTRIBUTION
+  CONTRIBUTION_REFUND
+  READING_REWARD
+  AD_REWARD
+  ADMIN_ADJUSTMENT
+}
+
+enum CreditTransactionStatus {
+  COMMITTED
+  REVERSED
+}
+
+enum TranslationJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}

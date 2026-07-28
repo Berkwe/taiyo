@@ -13,6 +13,7 @@ model User {
   banned          Boolean?
   banReason       String?
   banExpires      DateTime?
+  deletedAt       DateTime?
   role            Roles     @default(USER)
   /// [UserSettings]
   settings        Json      @default("{}")
@@ -26,20 +27,29 @@ model User {
   following User[]        @relation("UserFollow")
 
   // These exist solely to satisfy Prisma's "relations must be defined on both sides" rule
-  createdMedias         Media[]
-  uploadedMediaCovers   Cover[]
-  uploadedMediaBanners  Banner[]
-  createdMediaTitles    Title[]
-  createdMediaTrackers  Tracker[]
-  uploadedMediaChapters Chapter[]
-  createdGroups         Group[]
-  contentReports        ContentReport[]
-  assignedReports       ContentReport[]         @relation("AssignedReports")
-  readingProgress       ReadingProgressRecord[]
-  seriesFollows         SeriesFollow[]
-  notifications         SiteNotification[]
-  notificationSettings  NotificationPreference?
-  contentRevisions      ContentRevision[]
+  createdMedias                Media[]
+  uploadedMediaCovers          Cover[]
+  uploadedMediaBanners         Banner[]
+  createdMediaTitles           Title[]
+  createdMediaTrackers         Tracker[]
+  uploadedMediaChapters        Chapter[]
+  createdGroups                Group[]
+  contentReports               ContentReport[]
+  assignedReports              ContentReport[]               @relation("AssignedReports")
+  readingProgress              ReadingProgressRecord[]
+  seriesFollows                SeriesFollow[]
+  notifications                SiteNotification[]
+  notificationSettings         NotificationPreference?
+  contentRevisions             ContentRevision[]
+  translationCampaigns         TranslationCampaign[]
+  translationContributions     TranslationContribution[]
+  translationEarlyAccessGrants TranslationEarlyAccessGrant[]
+  creditAccount                CreditAccount?
+  creditTransactions           CreditTransaction[]
+  sourcePreferences            TranslationSourcePreference[]
+  batchTranslationRequests     BatchTranslationRequest[]
+
+  @@index([deletedAt])
 }
 
 model UserProfile {

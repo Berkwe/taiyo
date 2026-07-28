@@ -11,6 +11,7 @@ declare global {
       showFollowing?: boolean
       showLibrary?: boolean
       homeLayout?: HomeLayout
+      translationLanguage?: Languages
     }
     type MediaChapterPage = { id: string }
     type MediaCommentAttachement = { id: string; extension: "png" | "gif" }
