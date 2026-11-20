@@ -8,19 +8,24 @@ import { db, Languages, type Prisma } from "@taiyomoe/db"
 import { z } from "zod"
 import {
   isUnavailableNaverMirrorError,
+  MandownBridgeError,
   type MandownMangaDetailsOutput,
   type MandownSourceDetailsOutput,
+  type MandownSourceDiscoveryOutput,
   type MandownSourceProvider,
   mandownSearch,
+  mandownSearchSources,
   mandownSourceDetails,
 } from "./mandown-bridge"
-import type {
-  AniListCatalogSearchItem,
-  CatalogChapter,
-  CatalogSourceProvider,
-  PublicCatalogSeries,
-  PublicSourceEdition,
-  SourceCatalogProvider,
+import {
+  type AniListCatalogSearchItem,
+  type CatalogChapter,
+  type CatalogLanguage,
+  type CatalogSourceProvider,
+  orderSourceEditionsByAccess,
+  type PublicCatalogSeries,
+  type PublicSourceEdition,
+  type SourceCatalogProvider,
 } from "./types"
 
 const providerConfig = {
@@ -54,12 +59,98 @@ const providerConfig = {
 >
 
 const languageCodes = new Set<string>(Object.values(Languages))
-const englishLanguageNames = new Intl.DisplayNames(["en"], { type: "language" })
-const turkishLanguageNames = new Intl.DisplayNames(["tr"], { type: "language" })
+const englishLanguageNames = new Intl.DisplayNames(["en"], {
+  type: "language",
+})
+const turkishLanguageNames = new Intl.DisplayNames(["tr"], {
+  type: "language",
+})
+
+const aniListAdultFlagsSchema = z.object({
+  data: z.object({
+    Page: z.object({
+      media: z.array(
+        z.object({
+          id: z.number().int().positive(),
+          isAdult: z.boolean().nullable(),
+        }),
+      ),
+    }),
+  }),
+})
+
+const aniListAdultFlagsQuery = `
+  query ($ids: [Int]) {
+    Page(page: 1, perPage: 50) {
+      media(id_in: $ids, type: MANGA) {
+        id
+        isAdult
+      }
+    }
+  }
+`
+
+async function aniListAdultFlags(ids: number[]) {
+  const response = await fetch("https://graphql.anilist.co", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: aniListAdultFlagsQuery,
+      variables: { ids },
+    }),
+    cache: "no-store",
+  })
+  if (!response.ok) {
+    const retryAfter = Number(response.headers.get("Retry-After"))
+    throw new MandownBridgeError(
+      `AniList adult flag request failed with status ${response.status}.`,
+      response.status === 429
+        ? "AniListRateLimitError"
+        : "AniListResponseError",
+      Number.isFinite(retryAfter) ? retryAfter : undefined,
+    )
+  }
+  const parsed = aniListAdultFlagsSchema.safeParse(await response.json())
+  if (!parsed.success)
+    throw new MandownBridgeError(
+      "AniList adult flag response is invalid.",
+      "AniListResponseError",
+    )
+  return new Map(
+    parsed.data.data.Page.media.flatMap((item) =>
+      typeof item.isAdult === "boolean" ? [[item.id, item.isAdult]] : [],
+    ),
+  )
+}
+
+export function filterAniListItemsByAdultFlag<
+  T extends { manga: { id: number } },
+>(
+  items: readonly T[],
+  adultFlags: ReadonlyMap<number, boolean>,
+  includeAdult: boolean,
+) {
+  return items.filter((item) => {
+    const isAdult = adultFlags.get(item.manga.id)
+    return isAdult === false || (includeAdult && isAdult === true)
+  })
+}
+
+export function filterCatalogEntriesBySourceAvailability<
+  T extends { sources: readonly unknown[] },
+>(entries: readonly T[], onlyWithSources: boolean) {
+  return onlyWithSources
+    ? entries.filter(({ sources }) => sources.length > 0)
+    : [...entries]
+}
 
 const selectionSourceSchema = z.object({
   provider: z.enum(["mangadex", "webtoons", "naver", "naver_series"]),
   url: z.url(),
+  fallbackUrls: z.array(z.url()).default([]),
   language: z.enum(Languages),
   site: z.string(),
   type: z.string().nullable(),
@@ -258,6 +349,11 @@ function validatedSourceUrl(
     const url = new URL(value)
     if (url.protocol !== "http:" && url.protocol !== "https:") return null
     url.protocol = "https:"
+    if (
+      provider === "naver" &&
+      url.pathname.toLocaleLowerCase("en") === "/webtoon/list.nhn"
+    )
+      url.pathname = "/webtoon/list"
     return url.toString()
   } catch {
     return null
@@ -265,6 +361,21 @@ function validatedSourceUrl(
 }
 
 type ResolvedSource = SelectionPayload["sources"][number]
+
+class SourceCandidatesError extends Error {
+  constructor(
+    readonly failures: unknown[],
+    readonly lastFailure: unknown,
+  ) {
+    super(
+      lastFailure instanceof Error
+        ? lastFailure.message
+        : "Mandown kaynağına ulaşılamadı.",
+      { cause: lastFailure },
+    )
+    this.name = "SourceCandidatesError"
+  }
+}
 
 export function preferPrimarySourceLanguages(
   sources: ResolvedSource[],
@@ -280,14 +391,132 @@ export function preferPrimarySourceLanguages(
   )
 }
 
+function sourceSiteKey(source: Pick<ResolvedSource, "provider" | "url">) {
+  try {
+    return new URL(source.url).hostname
+      .toLocaleLowerCase("en")
+      .replace(/^(?:www|m)\./, "")
+  } catch {
+    return source.provider
+  }
+}
+
+export function consolidateDuplicateSources(
+  sources: ResolvedSource[],
+): ResolvedSource[] {
+  const groups = new Map<string, ResolvedSource[]>()
+  for (const source of sources) {
+    const key = `${source.language}:${sourceSiteKey(source)}`
+    const group = groups.get(key)
+    if (group) group.push(source)
+    else groups.set(key, [source])
+  }
+  return [...groups.values()].map((group) => {
+    const ranked = [...group].sort(
+      (left, right) =>
+        providerConfig[right.provider].priority -
+        providerConfig[left.provider].priority,
+    )
+    const primary = ranked[0]!
+    const fallbackUrls = [
+      ...primary.fallbackUrls,
+      ...ranked
+        .slice(1)
+        .flatMap((source) => [source.url, ...source.fallbackUrls]),
+    ].filter(
+      (url, index, urls) => url !== primary.url && urls.indexOf(url) === index,
+    )
+    return { ...primary, fallbackUrls }
+  })
+}
+
 function resolvedSources(details: MandownMangaDetailsOutput) {
-  const sources = details.sources.flatMap((source) => {
+  const candidates = [
+    ...details.sources,
+    ...details.manga.external_links.flatMap((link) => {
+      const provider = sourceProviderFromUrl(link.url)
+      return provider
+        ? [
+            {
+              provider,
+              url: link.url,
+              language: link.language,
+              site: link.site,
+              type: link.type,
+              is_disabled: Boolean(link.is_disabled),
+            },
+          ]
+        : []
+    }),
+  ]
+  const sources = candidates.flatMap((source) => {
     if (source.is_disabled) return []
     const url = validatedSourceUrl(source.provider, source.url)
     const language = normalizeSourceLanguage(source.language, source.url)
-    return url && language ? [{ ...source, url, language }] : []
+    return url && language
+      ? [{ ...source, url, fallbackUrls: [], language }]
+      : []
   })
-  return preferPrimarySourceLanguages(sources)
+  return preferPrimarySourceLanguages(consolidateDuplicateSources(sources))
+}
+
+export function mergeDiscoveredSources(
+  selection: SelectionPayload,
+  discovery: MandownSourceDiscoveryOutput,
+) {
+  const discovered = discovery.links.flatMap((link) => {
+    const provider = sourceProviderFromUrl(link.url)
+    if (
+      !provider ||
+      (provider !== link.provider &&
+        !(link.provider === "naver" && provider === "naver_series")) ||
+      !["SAME_DIRECT_LINK", "SAME_IDENTIFIER", "SAME_JEV"].includes(
+        link.method,
+      ) ||
+      link.metadata_status === "error"
+    )
+      return []
+    return [
+      {
+        provider,
+        url: link.url,
+        language: link.language,
+        site: providerConfig[provider].label,
+        type: "STREAMING",
+        is_disabled: false,
+      },
+    ]
+  })
+  return preferPrimarySourceLanguages(
+    consolidateDuplicateSources([
+      ...selection.sources,
+      ...resolvedSources({
+        manga: selection.manga,
+        sources: [...selection.sources, ...discovered],
+      }),
+    ]),
+  )
+}
+
+export async function resolveSelectionSources(
+  selectionToken: string,
+  discover: (
+    id: number,
+  ) => Promise<MandownSourceDiscoveryOutput> = mandownSearchSources,
+) {
+  // Validate the signed selection before initiating any paid or upstream work.
+  const selection = verifySelection(selectionToken)
+  try {
+    const discovery = await discover(selection.manga.id)
+    return {
+      manga: selection.manga,
+      sources: mergeDiscoveredSources(selection, discovery),
+      discoveryComplete: discovery.errors.length === 0,
+    }
+  } catch {
+    // A failed/partial discovery must not erase known source editions.
+    return { ...selection, discoveryComplete: false }
+  }
 }
 
 function titleValues(manga: MandownMangaDetailsOutput["manga"]) {
@@ -355,6 +584,7 @@ function publicEdition(
 ): PublicSourceEdition | null {
   const provider = sourceProviderFromUrl(edition.sourceUrl)
   if (!provider) return null
+  const orderedChapters = [...chapters].sort(compareCatalogChapterNumbers)
   return {
     id: edition.id,
     publicSourceLabel: publicLabel,
@@ -362,14 +592,34 @@ function publicEdition(
     sourceLanguageLabel: sourceLanguageLabel(edition.sourceLanguage),
     provider,
     providerLabel: publicLabel,
+    accessStatus:
+      provider === "naver_series" ? "paid-account-required" : "available",
     description: sourceDescription(edition.sourceLanguage),
-    chapterCount: chapters.length,
-    lastChapterNumber: chapters.at(-1)?.number ?? "—",
+    chapterCount: orderedChapters.length,
+    lastChapterNumber: orderedChapters.at(-1)?.number ?? "—",
     lastUpdatedAt: edition.lastUpdatedAt?.toISOString(),
     priority: edition.priority,
     chaptersLoaded,
-    chapters,
+    chapters: orderedChapters,
   }
+}
+
+const chapterNumberCollator = new Intl.Collator("en", {
+  numeric: true,
+  sensitivity: "base",
+})
+
+export function compareCatalogChapterNumbers(
+  left: Pick<CatalogChapter, "number">,
+  right: Pick<CatalogChapter, "number">,
+) {
+  return chapterNumberCollator.compare(left.number, right.number)
+}
+
+export function defaultCatalogSourceVisibility(
+  sourceLanguage: CatalogLanguage,
+) {
+  return sourceLanguage !== "zh"
 }
 
 export async function syncCatalogSourceChapters(
@@ -390,7 +640,10 @@ export async function syncCatalogSourceChapters(
   const seenExternalIds = new Set<string>()
   const synchronized: CatalogChapter[] = []
 
-  for (const [index, chapter] of chapters.entries()) {
+  const orderedChapters = [...chapters].sort((left, right) =>
+    chapterNumberCollator.compare(left.chapterNumber, right.chapterNumber),
+  )
+  for (const [index, chapter] of orderedChapters.entries()) {
     const chapterNumber = (chapter.chapterNumber || String(index + 1)).trim()
     if (!chapterNumber || seenNumbers.has(chapterNumber)) continue
 
@@ -485,12 +738,34 @@ export async function syncCatalogSourceChapters(
 }
 
 export class MandownSourceCatalogProvider implements SourceCatalogProvider {
-  async searchSeries(query: string): Promise<AniListCatalogSearchItem[]> {
+  constructor(
+    private readonly discoverSources: (
+      id: number,
+    ) => Promise<MandownSourceDiscoveryOutput> = mandownSearchSources,
+  ) {}
+
+  async searchSeries(
+    query: string,
+    options: { includeAdult?: boolean; onlyWithSources?: boolean } = {},
+  ): Promise<AniListCatalogSearchItem[]> {
     if (!normalizeCatalogQuery(query)) return []
     const { items } = await mandownSearch(query)
-    return items.map((details) => {
+    if (!items.length) return []
+    const adultFlags = await aniListAdultFlags(
+      items.map((details) => details.manga.id),
+    )
+    return filterCatalogEntriesBySourceAvailability(
+      filterAniListItemsByAdultFlag(
+        items,
+        adultFlags,
+        options.includeAdult === true,
+      ).map((details) => ({
+        details,
+        sources: resolvedSources(details),
+      })),
+      options.onlyWithSources === true,
+    ).map(({ details, sources }) => {
       const item = details.manga
-      const sources = resolvedSources(details)
       return {
         anilistId: item.id,
         selectionToken: signSelection({
@@ -512,7 +787,10 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
   }
 
   async selectSeries(selectionToken: string) {
-    const { manga, sources } = verifySelection(selectionToken)
+    const { manga, sources, discoveryComplete } = await resolveSelectionSources(
+      selectionToken,
+      this.discoverSources,
+    )
     const titles = titleValues(manga)
     const title =
       manga.title.english ??
@@ -573,15 +851,16 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
         },
       })
 
-      await tx.catalogSourceEdition.updateMany({
-        where: {
-          catalogSeriesId: saved.id,
-          ...(externalIds.length
-            ? { externalEditionId: { notIn: externalIds } }
-            : {}),
-        },
-        data: { isActive: false },
-      })
+      if (discoveryComplete)
+        await tx.catalogSourceEdition.updateMany({
+          where: {
+            catalogSeriesId: saved.id,
+            ...(externalIds.length
+              ? { externalEditionId: { notIn: externalIds } }
+              : {}),
+          },
+          data: { isActive: false },
+        })
       const sourceOrdinals = new Map<string, number>()
       for (const source of sources) {
         const config = providerConfig[source.provider]
@@ -602,15 +881,18 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
             catalogSeriesId: saved.id,
             externalEditionId,
             sourceUrl: source.url,
+            fallbackSourceUrls: source.fallbackUrls,
             backendPlatform: config.backendPlatform,
             sourceLanguage: source.language,
             publicSourceLabel: publicLabel,
             publicDescription: sourceDescription(source.language),
             priority: config.priority,
             isActive: true,
+            isPublic: defaultCatalogSourceVisibility(source.language),
           },
           update: {
             sourceUrl: source.url,
+            fallbackSourceUrls: source.fallbackUrls,
             backendPlatform: config.backendPlatform,
             sourceLanguage: source.language,
             publicSourceLabel: publicLabel,
@@ -633,12 +915,27 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
       where: { id: catalogSeriesId, isActive: true },
       include: {
         editions: {
-          where: { isActive: true },
+          where: { isActive: true, isPublic: true },
           orderBy: { priority: "desc" },
         },
       },
     })
     if (!series) return null
+    const editions = series.editions.flatMap((edition, index, allEditions) => {
+      const ordinal =
+        allEditions
+          .slice(0, index)
+          .filter(
+            (candidate) => candidate.sourceLanguage === edition.sourceLanguage,
+          ).length + 1
+      const mapped = publicEdition(
+        edition,
+        [],
+        false,
+        anonymousSourceLabel(edition.sourceLanguage, ordinal),
+      )
+      return mapped ? [mapped] : []
+    })
     return {
       id: series.id,
       canonicalKey: series.canonicalKey,
@@ -649,22 +946,7 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
       description: series.description,
       cover: `/api/translation/catalog/${series.id}/cover`,
       publicationStatus: publicPublicationStatus(series.publicationStatus),
-      editions: series.editions.flatMap((edition, index, editions) => {
-        const ordinal =
-          editions
-            .slice(0, index)
-            .filter(
-              (candidate) =>
-                candidate.sourceLanguage === edition.sourceLanguage,
-            ).length + 1
-        const mapped = publicEdition(
-          edition,
-          [],
-          false,
-          anonymousSourceLabel(edition.sourceLanguage, ordinal),
-        )
-        return mapped ? [mapped] : []
-      }),
+      editions: orderSourceEditionsByAccess(editions),
     } satisfies PublicCatalogSeries
   }
 
@@ -689,28 +971,26 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
     force = false,
   ): Promise<PublicSourceEdition | null> {
     const edition = await db.catalogSourceEdition.findUnique({
-      where: { id: sourceEditionId, isActive: true },
+      where: { id: sourceEditionId, isActive: true, isPublic: true },
       include: {
         catalogSeries: {
           include: {
             editions: {
-              where: { isActive: true },
+              where: { isActive: true, isPublic: true },
               orderBy: { priority: "desc" },
             },
           },
         },
         chapters: {
-          where: { isAvailable: true },
+          where: { isAvailable: true, isPublic: true },
           orderBy: { sortKey: "asc" },
         },
       },
     })
     if (!edition) return null
-    const provider = sourceProviderFromUrl(edition.sourceUrl)
-    const url = provider
-      ? validatedSourceUrl(provider, edition.sourceUrl)
-      : null
-    if (!provider || !url) return null
+    const candidates = [edition.sourceUrl, ...edition.fallbackSourceUrls]
+    if (!candidates.some((candidate) => sourceProviderFromUrl(candidate)))
+      return null
 
     let publicChapters: CatalogChapter[] = edition.chapters.map((chapter) => ({
       id: chapter.id,
@@ -725,17 +1005,28 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
       !edition.lastUpdatedAt ||
       Date.now() - edition.lastUpdatedAt.getTime() > 15 * 60_000
     if (force || publicChapters.length === 0 || stale) {
-      let details: MandownSourceDetailsOutput
+      let resolved: {
+        url: string
+        details: MandownSourceDetailsOutput
+      }
       try {
-        details = await mandownSourceDetails(url)
+        resolved = await firstAvailableSourceDetails(candidates)
       } catch (error) {
-        if (!isUnavailableNaverMirrorError(error)) throw error
+        const failures =
+          error instanceof SourceCandidatesError
+            ? error.failures
+            : ([error] as unknown[])
+        if (!failures.every(isUnavailableNaverMirrorError))
+          throw error instanceof SourceCandidatesError
+            ? error.lastFailure
+            : error
         await db.catalogSourceEdition.update({
           where: { id: edition.id },
           data: { isActive: false },
         })
         return null
       }
+      const { details } = resolved
       const refreshedAt = new Date()
       publicChapters = await db.$transaction(async (tx) => {
         await tx.catalogSeries.update({
@@ -747,16 +1038,27 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
               details.metadata.cover_art || edition.catalogSeries.coverPath,
           },
         })
-        const synchronized = await syncCatalogSourceChapters(
-          tx,
-          edition.id,
-          details.chapters,
-        )
+        await syncCatalogSourceChapters(tx, edition.id, details.chapters)
         await tx.catalogSourceEdition.update({
           where: { id: edition.id },
           data: { lastUpdatedAt: refreshedAt },
         })
-        return synchronized
+        const visibleChapters = await tx.catalogSourceChapter.findMany({
+          where: {
+            sourceEditionId: edition.id,
+            isAvailable: true,
+            isPublic: true,
+          },
+          orderBy: { sortKey: "asc" },
+        })
+        return visibleChapters.map((chapter) => ({
+          id: chapter.id,
+          externalChapterId: chapter.externalChapterId,
+          number: chapter.chapterNumber,
+          sortKey: chapter.sortKey,
+          title: chapter.title ?? undefined,
+          publishedAt: chapter.publishedAt?.toISOString(),
+        }))
       })
       currentEdition = { ...edition, lastUpdatedAt: refreshedAt }
     }
@@ -778,18 +1080,126 @@ export class MandownSourceCatalogProvider implements SourceCatalogProvider {
     const edition = await db.catalogSourceEdition.findUnique({
       where: { id: sourceEditionId, isActive: true },
     })
-    const provider = sourceProviderFromUrl(edition?.sourceUrl ?? null)
-    const url = provider
-      ? validatedSourceUrl(provider, edition?.sourceUrl ?? null)
-      : null
-    if (!edition || !provider || !url)
-      throw new Error("Mandown kaynak URL eşlemesi bulunamadı.")
-    return url
+    if (!edition) throw new Error("Mandown kaynak URL eşlemesi bulunamadı.")
+    if (isPaidSourceUrl(edition.sourceUrl)) throw new Error(paidSourceNotice)
+    return (
+      await firstAvailableSourceDetails([
+        edition.sourceUrl,
+        ...edition.fallbackSourceUrls,
+      ])
+    ).url
   }
+}
+
+export async function firstAvailableSourceDetails(
+  candidates: Array<string | null>,
+  load: (
+    url: string,
+  ) => Promise<MandownSourceDetailsOutput> = loadCatalogSourceDetails,
+) {
+  let validCandidateCount = 0
+  const failures: unknown[] = []
+  for (const candidate of candidates) {
+    const provider = sourceProviderFromUrl(candidate)
+    const url = provider ? validatedSourceUrl(provider, candidate) : null
+    if (!url) continue
+    validCandidateCount += 1
+    try {
+      return { url, details: await load(url) }
+    } catch (error) {
+      failures.push(error)
+    }
+  }
+  if (failures.length)
+    throw new SourceCandidatesError(failures, failures.at(-1))
+  if (!validCandidateCount)
+    throw new Error("Mandown kaynak URL eşlemesi bulunamadı.")
+  throw new Error("Mandown kaynağına ulaşılamadı.")
+}
+
+export const paidSourceNotice =
+  "Bu bölüm kaynak üzerinde ücretli ve şuanlık ücretli hesap entegrasyonu sağlanamıyor."
+
+export function isPaidSourceUrl(value: string | null) {
+  return sourceProviderFromUrl(value) === "naver_series"
+}
+
+export function parseNaverSeriesChapterCount(html: string) {
+  const matched =
+    html.match(
+      /(?:end_total_episode|총)\s*[\s\S]{0,160}?<strong[^>]*>\s*([\d,]+)\s*<\/strong>/i,
+    ) ?? html.match(/총\s*<strong[^>]*>\s*([\d,]+)\s*<\/strong>\s*화/i)
+  if (!matched?.[1]) return null
+  const count = Number.parseInt(matched[1].replaceAll(",", ""), 10)
+  return Number.isSafeInteger(count) && count > 0 ? count : null
+}
+
+async function loadNaverSeriesDetails(
+  url: string,
+): Promise<MandownSourceDetailsOutput> {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "User-Agent":
+        "Mozilla/5.0 (compatible; NovoraScans/1.0; +https://novorascans.com)",
+    },
+    signal: AbortSignal.timeout(15_000),
+  })
+  if (!response.ok)
+    throw new Error(
+      `Naver Series bölüm listesi alınamadı (${response.status}).`,
+    )
+  const html = await response.text()
+  const chapterCount = parseNaverSeriesChapterCount(html)
+  if (!chapterCount) throw new Error("Naver Series bölüm sayısı okunamadı.")
+  const title =
+    html
+      .match(
+        /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i,
+      )?.[1]
+      ?.trim() ?? "Naver Series"
+  return {
+    metadata: {
+      title,
+      authors: [],
+      url,
+      genres: [],
+      description: "",
+      cover_art: "",
+      title_slug: "",
+    },
+    chapters: Array.from({ length: chapterCount }, (_, index) => {
+      const chapterNumber = String(index + 1)
+      return {
+        title: `Bölüm ${chapterNumber}`,
+        url: `${url}#chapter-${chapterNumber}`,
+        slug: `chapter-${chapterNumber}`,
+        chapterNumber,
+      }
+    }),
+  }
+}
+
+async function loadCatalogSourceDetails(url: string) {
+  return isPaidSourceUrl(url)
+    ? loadNaverSeriesDetails(url)
+    : mandownSourceDetails(url)
 }
 
 export function getSourceCatalogProvider(): SourceCatalogProvider {
   const provider = process.env.SOURCE_CATALOG_PROVIDER ?? "mandown"
   if (provider === "mandown") return new MandownSourceCatalogProvider()
   throw new Error(`Desteklenmeyen SOURCE_CATALOG_PROVIDER: ${provider}`)
+}
+
+export async function loadPublicCatalogSelection(
+  catalogSeriesId: string,
+  sourceEditionId: string,
+  provider: SourceCatalogProvider = getSourceCatalogProvider(),
+) {
+  const series = await provider.getSeriesDetails(catalogSeriesId)
+  if (!series?.editions.some((edition) => edition.id === sourceEditionId))
+    return null
+  const edition = await provider.getSourceEditionDetails(sourceEditionId)
+  return edition ? { series, edition } : null
 }

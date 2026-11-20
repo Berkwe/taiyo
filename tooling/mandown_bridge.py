@@ -6,13 +6,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
-from dataclasses import asdict
 import io
 import json
 import os
-from pathlib import Path
 import sys
 import traceback
+from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -52,15 +52,37 @@ async def search(client: mandown.AniListClient, title: str) -> dict[str, Any]:
                 "manga": asdict(item),
                 "sources": [
                     asdict(source)
-                    for source in client.extract_supported_sources(
-                        item.external_links
-                    )
+                    for source in client.extract_supported_sources(item.external_links)
                 ],
             }
             for item in response.items
         ],
         "pageInfo": asdict(response.page_info),
     }
+
+
+def configure_discovery_environment() -> None:
+    root = Path(__file__).resolve().parent.parent
+    os.environ.setdefault(
+        "MANDOWN_JEV_CACHE", str(root / "storage/mandown/jev.sqlite3")
+    )
+    os.environ.setdefault(
+        "MANDOWN_SEARCH_LOG", str(root / "storage/mandown/search.jsonl")
+    )
+    os.environ.setdefault("MANDOWN_JEV_CACHE_REVISION", "1")
+    for name in ("MANDOWN_JEV_CACHE", "MANDOWN_SEARCH_LOG"):
+        value = os.environ[name]
+        if name == "MANDOWN_JEV_CACHE" and value == "off":
+            continue
+        configured = Path(value)
+        if not configured.is_absolute():
+            os.environ[name] = str(root / configured)
+
+
+async def search_sources(anilist_id: int) -> dict[str, Any]:
+    configure_discovery_environment()
+    response = await mandown.search_sources(anilist_id)
+    return response.asdict()
 
 
 async def manga_details(
@@ -212,6 +234,8 @@ async def dispatch(
         return {"pid": os.getpid()}
     if command == "search" and len(args) == 2:
         return await search(client, args[1])
+    if command == "search-sources" and len(args) == 2:
+        return await search_sources(int(args[1]))
     if command == "manga-details" and len(args) == 2:
         return await manga_details(client, int(args[1]))
     if command == "source-details" and len(args) == 2:
@@ -297,6 +321,8 @@ def main() -> None:
     search_parser.add_argument("title")
     manga_parser = subparsers.add_parser("manga-details")
     manga_parser.add_argument("anilist_id", type=int)
+    discovery_parser = subparsers.add_parser("search-sources")
+    discovery_parser.add_argument("anilist_id", type=int)
     source_parser = subparsers.add_parser("source-details")
     source_parser.add_argument("url")
     download_parser = subparsers.add_parser("download")
@@ -314,7 +340,7 @@ def main() -> None:
     command_args = [args.command]
     if args.command == "search":
         command_args.append(args.title)
-    elif args.command == "manga-details":
+    elif args.command in {"manga-details", "search-sources"}:
         command_args.append(str(args.anilist_id))
     elif args.command == "source-details":
         command_args.append(args.url)

@@ -222,13 +222,13 @@ export type CatalogSeriesScalarFieldEnum = z.infer<typeof CatalogSeriesScalarFie
 
 // File: CatalogSourceEditionScalarFieldEnum.schema.ts
 
-export const CatalogSourceEditionScalarFieldEnumSchema = z.enum(['id', 'catalogSeriesId', 'externalEditionId', 'sourceUrl', 'backendPlatform', 'sourceLanguage', 'publicSourceLabel', 'publicDescription', 'priority', 'lastUpdatedAt', 'isActive', 'createdAt', 'updatedAt'])
+export const CatalogSourceEditionScalarFieldEnumSchema = z.enum(['id', 'catalogSeriesId', 'externalEditionId', 'sourceUrl', 'fallbackSourceUrls', 'backendPlatform', 'sourceLanguage', 'publicSourceLabel', 'publicDescription', 'priority', 'lastUpdatedAt', 'isActive', 'isPublic', 'createdAt', 'updatedAt'])
 
 export type CatalogSourceEditionScalarFieldEnum = z.infer<typeof CatalogSourceEditionScalarFieldEnumSchema>;
 
 // File: CatalogSourceChapterScalarFieldEnum.schema.ts
 
-export const CatalogSourceChapterScalarFieldEnumSchema = z.enum(['id', 'sourceEditionId', 'externalChapterId', 'chapterNumber', 'sortKey', 'title', 'publishedAt', 'isAvailable', 'createdAt', 'updatedAt'])
+export const CatalogSourceChapterScalarFieldEnumSchema = z.enum(['id', 'sourceEditionId', 'externalChapterId', 'chapterNumber', 'sortKey', 'title', 'publishedAt', 'isAvailable', 'isPublic', 'createdAt', 'updatedAt'])
 
 export type CatalogSourceChapterScalarFieldEnum = z.infer<typeof CatalogSourceChapterScalarFieldEnumSchema>;
 
@@ -1222,6 +1222,7 @@ export const CatalogSourceEditionSchema = z.object({
   catalogSeriesId: z.string(),
   externalEditionId: z.string(),
   sourceUrl: z.string().nullish(),
+  fallbackSourceUrls: z.array(z.string()),
   backendPlatform: SourcePlatformSchema,
   sourceLanguage: LanguagesSchema,
   publicSourceLabel: z.string(),
@@ -1229,6 +1230,7 @@ export const CatalogSourceEditionSchema = z.object({
   priority: z.number().int(),
   lastUpdatedAt: z.date().nullish(),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(true),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -1247,6 +1249,7 @@ export const CatalogSourceChapterSchema = z.object({
   title: z.string().nullish(),
   publishedAt: z.date().nullish(),
   isAvailable: z.boolean().default(true),
+  isPublic: z.boolean().default(true),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

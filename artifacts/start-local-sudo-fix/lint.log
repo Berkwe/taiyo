@@ -1,0 +1,5 @@
+
+> taiyo@ check:ws /home/berkwe/Desktop/myProjects/NovoraScansSite
+> biome check apps/ packages/ tooling/
+
+Checked 471 files in 654ms. No fixes applied.

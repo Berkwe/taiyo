@@ -94,7 +94,7 @@ export const SignInFormEmail = () => {
           control={form.control}
           name="password"
         >
-          <ForgotPasswordButton />
+          <ForgotPasswordButton email={form.watch("email")} />
         </PasswordField>
         <CheckboxField
           control={form.control}

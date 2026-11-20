@@ -1,0 +1,285 @@
+Changed branches/fields: SUDO_USER -> getent passwd -> RUNTIME_HOME; PATH includes RUNTIME_HOME/.local/bin; nvm uses RUNTIME_HOME; Docker permission vs daemon diagnostic.
+Original SHA256: 069b4f9be433dee0c3cb27a7ce1fc761d414bf5864fcf158771e5cb2ad1483b1
+BASELINE command: env -u NVM_DIR SUDO_USER=berkwe HOME=/root PATH=/usr/bin:/bin /bin/bash /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/ORIGINAL.sh
+Input: no stdin; simulated sudo HOME/PATH, non-root executor
+Literal output:
+NovoraScans yerel ortamı hazırlanıyor…
+Hata: 'node' bulunamadı.
+
+Exit status: 1
+MODIFIED command: env -u NVM_DIR SUDO_USER=berkwe HOME=/root PATH=/usr/bin:/bin /bin/bash /home/berkwe/Desktop/myProjects/NovoraScansSite/start-local.sh
+Input: no stdin; simulated sudo HOME/PATH, non-root executor
+Literal output:
+NovoraScans yerel ortamı hazırlanıyor…
+WARNING: Error loading config file: open /root/.docker/config.json: permission denied
+Client:
+ Version:    29.8.2
+ Context:    default
+ Debug Mode: true
+ Plugins:
+  compose: Docker Compose (Docker Inc.)
+    Version:  5.6.0
+    Path:     /usr/lib/docker/cli-plugins/docker-compose
+
+Server:
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+Hata: Docker soketine erişim reddedildi. sudo bash start-local.sh ile tekrar deneyin.
+
+Exit status: 1
+ROLLBACK command: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/ROLLBACK.sh /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/rollback-test.sh
+Input: modified script copy
+Literal output: ''
+Exit status: 0
+Restored SHA256: 069b4f9be433dee0c3cb27a7ce1fc761d414bf5864fcf158771e5cb2ad1483b1
+Restored bytes match original: True
+Restored command: env -u NVM_DIR SUDO_USER=berkwe HOME=/root PATH=/usr/bin:/bin /bin/bash /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/rollback-test.sh
+Literal output:
+NovoraScans yerel ortamı hazırlanıyor…
+Hata: 'node' bulunamadı.
+
+Exit status: 1
+Real source start-local.sh remains changed.
+Regression tests: /home/berkwe/Desktop/myProjects/NovoraScansSite/tooling/test_start_local.py
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/MODIFIED_FILE.sh
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/DIFF_FILE.patch
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/VERIFICATION.txt
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-sudo-fix/ROLLBACK.sh
+
+syntax command: bash -n start-local.sh
+Input: no stdin
+Literal output:
+
+Exit status: 0
+
+launcher-tests command: python3 -B tooling/test_start_local.py
+Input: no stdin
+Literal output:
+test_docker_permission_is_not_reported_as_stopped (__main__.LauncherTests.test_docker_permission_is_not_reported_as_stopped) ... ok
+test_local_node_with_sanitized_path (__main__.LauncherTests.test_local_node_with_sanitized_path) ... ok
+test_missing_health_runs_setup_then_dev (__main__.LauncherTests.test_missing_health_runs_setup_then_dev) ... ok
+test_stopped_docker_keeps_diagnostic (__main__.LauncherTests.test_stopped_docker_keeps_diagnostic) ... ok
+test_sudo_resolves_invoking_users_home (__main__.LauncherTests.test_sudo_resolves_invoking_users_home) ... ok
+test_unknown_sudo_user_has_useful_error (__main__.LauncherTests.test_unknown_sudo_user_has_useful_error) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.104s
+
+OK
+
+Exit status: 0
+
+format command: pnpm exec biome format apps/ packages/ tooling/
+Input: no stdin
+Literal output:
+Checked 470 files in 331ms. No fixes applied.
+
+Exit status: 0
+
+lint command: pnpm check:ws
+Input: no stdin
+Literal output:
+
+> taiyo@ check:ws /home/berkwe/Desktop/myProjects/NovoraScansSite
+> biome check apps/ packages/ tooling/
+
+Checked 471 files in 654ms. No fixes applied.
+
+Exit status: 0
+
+typecheck command: pnpm typecheck
+Input: no stdin
+Literal output:
+
+> taiyo@ typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite
+> node tooling/with-root-env.mjs turbo typecheck
+
+• turbo 2.10.7
+
+   • Packages in scope: @taiyomoe/auth, @taiyomoe/cache, @taiyomoe/config, @taiyomoe/db, @taiyomoe/email, @taiyomoe/github, @taiyomoe/io-worker, @taiyomoe/logs, @taiyomoe/meilisearch, @taiyomoe/messages, @taiyomoe/messaging, @taiyomoe/s3, @taiyomoe/schemas, @taiyomoe/storage, @taiyomoe/storybook, @taiyomoe/trpc, @taiyomoe/types, @taiyomoe/typescript, @taiyomoe/ui, @taiyomoe/utils, @taiyomoe/web, @types/global-types
+   • Running typecheck in 22 packages
+   • Remote caching disabled
+
+@taiyomoe/email:typecheck: cache hit, replaying logs cf8083b66c56871f
+@taiyomoe/email:typecheck: 
+@taiyomoe/email:typecheck: > @taiyomoe/email@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/email
+@taiyomoe/email:typecheck: > tsc --noEmit
+@taiyomoe/email:typecheck: 
+@taiyomoe/ui:typecheck: cache hit, replaying logs 0def1b9bf811d74a
+@taiyomoe/s3:typecheck: cache hit, replaying logs 010f9b053071ee5f
+@taiyomoe/ui:typecheck: 
+@taiyomoe/ui:typecheck: > @taiyomoe/ui@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/ui
+@taiyomoe/ui:typecheck: > tsc --noEmit
+@taiyomoe/storage:typecheck: cache hit, replaying logs 5987b02bd2efe6e5
+@taiyomoe/ui:typecheck: 
+@taiyomoe/s3:typecheck: 
+@taiyomoe/s3:typecheck: > @taiyomoe/s3@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/s3
+@taiyomoe/s3:typecheck: > tsc --noEmit
+@taiyomoe/s3:typecheck: 
+@taiyomoe/storage:typecheck: 
+@taiyomoe/storage:typecheck: > @taiyomoe/storage@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/storage
+@taiyomoe/storage:typecheck: > tsc --noEmit
+@taiyomoe/storage:typecheck: 
+@taiyomoe/utils:typecheck: cache hit, replaying logs 9efe71c4f459884a
+@taiyomoe/utils:typecheck: 
+@taiyomoe/utils:typecheck: > @taiyomoe/utils@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/utils
+@taiyomoe/config:typecheck: cache hit, replaying logs e7b302ce48badeec
+@taiyomoe/utils:typecheck: > tsc --noEmit
+@taiyomoe/utils:typecheck: 
+@taiyomoe/cache:typecheck: cache hit, replaying logs 005a8447db28885d
+@taiyomoe/config:typecheck: 
+@taiyomoe/cache:typecheck: 
+@taiyomoe/config:typecheck: > @taiyomoe/config@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/config
+@taiyomoe/cache:typecheck: > @taiyomoe/cache@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/cache
+@taiyomoe/config:typecheck: > tsc --noEmit
+@taiyomoe/cache:typecheck: > tsc --noEmit
+@taiyomoe/config:typecheck: 
+@taiyomoe/cache:typecheck: 
+@taiyomoe/db:typecheck: cache hit, replaying logs 8f6f19dd4ce32dae
+@taiyomoe/db:typecheck: 
+@taiyomoe/db:typecheck: > @taiyomoe/db@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db
+@taiyomoe/db:typecheck: > tsc --noEmit
+@taiyomoe/db:typecheck: 
+@taiyomoe/schemas:typecheck: cache hit, replaying logs 1c738afc02a2024b
+@taiyomoe/schemas:typecheck: 
+@taiyomoe/schemas:typecheck: > @taiyomoe/schemas@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/schemas
+@taiyomoe/schemas:typecheck: > tsc --noEmit
+@taiyomoe/schemas:typecheck: 
+@taiyomoe/types:typecheck: cache hit, replaying logs 952bceba94f7f607
+@taiyomoe/types:typecheck: 
+@taiyomoe/types:typecheck: > @taiyomoe/types@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/types
+@taiyomoe/types:typecheck: > tsc --noEmit
+@taiyomoe/types:typecheck: 
+@taiyomoe/storybook:typecheck: cache hit, replaying logs 062cfbda7efbc03a
+@taiyomoe/storybook:typecheck: 
+@taiyomoe/storybook:typecheck: > @taiyomoe/storybook@1.0.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/storybook
+@taiyomoe/storybook:typecheck: > tsc --noEmit
+@taiyomoe/storybook:typecheck: 
+@taiyomoe/meilisearch:typecheck: cache hit, replaying logs d2bfd2142cc982d7
+@taiyomoe/meilisearch:typecheck: 
+@taiyomoe/meilisearch:typecheck: > @taiyomoe/meilisearch@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/meilisearch
+@taiyomoe/meilisearch:typecheck: > tsc --noEmit
+@taiyomoe/meilisearch:typecheck: 
+@taiyomoe/messaging:typecheck: cache hit, replaying logs 13fd28850e231e67
+@taiyomoe/messaging:typecheck: 
+@taiyomoe/messaging:typecheck: > @taiyomoe/messaging@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/messaging
+@taiyomoe/messaging:typecheck: > tsc --noEmit
+@taiyomoe/messaging:typecheck: 
+@taiyomoe/auth:typecheck: cache hit, replaying logs f360af0977e03548
+@taiyomoe/auth:typecheck: 
+@taiyomoe/auth:typecheck: > @taiyomoe/auth@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/auth
+@taiyomoe/auth:typecheck: > tsc --noEmit
+@taiyomoe/auth:typecheck: 
+@taiyomoe/io-worker:typecheck: cache hit, replaying logs cc3e567b5bdfc922
+@taiyomoe/io-worker:typecheck: 
+@taiyomoe/io-worker:typecheck: > @taiyomoe/io-worker@1.0.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/io-worker
+@taiyomoe/io-worker:typecheck: > tsc --noEmit
+@taiyomoe/io-worker:typecheck: 
+@taiyomoe/trpc:typecheck: cache hit, replaying logs e1d147da250d49ef
+@taiyomoe/trpc:typecheck: 
+@taiyomoe/trpc:typecheck: > @taiyomoe/trpc@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/trpc
+@taiyomoe/trpc:typecheck: > tsc --noEmit
+@taiyomoe/trpc:typecheck: 
+@taiyomoe/web:typecheck: cache hit, replaying logs 2ac5e838c1e00b48
+@taiyomoe/web:typecheck: 
+@taiyomoe/web:typecheck: > @taiyomoe/web@2.0.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web
+@taiyomoe/web:typecheck: > tsc --noEmit
+@taiyomoe/web:typecheck: 
+
+ Tasks:    17 successful, 17 total
+Cached:    17 cached, 17 total
+  Time:    69ms >>> FULL TURBO
+
+
+Exit status: 0
+
+auth-tests command: pnpm test:auth
+Input: no stdin
+Literal output:
+
+> taiyo@ test:auth /home/berkwe/Desktop/myProjects/NovoraScansSite
+> corepack pnpm --filter @taiyomoe/web exec tsx --test tests/auth.test.ts
+
+✔ normal email sign-in does not depend on a captcha token (7.578988ms)
+✔ normal sign-in still rejects missing credentials (3.245175ms)
+✔ registration requires an independently entered matching confirmation (4.080438ms)
+✔ temporary and unknown email providers are rejected (0.965939ms)
+✔ permanent email whitelist accepts major providers (0.591586ms)
+✔ duplicate usernames have a localized auth error mapping (0.472377ms)
+✔ development auth accepts the current same-host private LAN origin (59.413413ms)
+✔ dynamic auth origins stay disabled in production and for foreign hosts (0.95274ms)
+✔ mobile account verification emails use the current LAN host and result page (1.228645ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1146.858341
+
+Exit status: 0
+
+build command: pnpm build
+Input: no stdin
+Literal output:
+
+> taiyo@ build /home/berkwe/Desktop/myProjects/NovoraScansSite
+> node tooling/with-root-env.mjs turbo build
+
+• turbo 2.10.7
+
+   • Packages in scope: @taiyomoe/auth, @taiyomoe/cache, @taiyomoe/config, @taiyomoe/db, @taiyomoe/email, @taiyomoe/github, @taiyomoe/io-worker, @taiyomoe/logs, @taiyomoe/meilisearch, @taiyomoe/messages, @taiyomoe/messaging, @taiyomoe/s3, @taiyomoe/schemas, @taiyomoe/storage, @taiyomoe/storybook, @taiyomoe/trpc, @taiyomoe/types, @taiyomoe/typescript, @taiyomoe/ui, @taiyomoe/utils, @taiyomoe/web, @types/global-types
+   • Running build in 22 packages
+   • Remote caching disabled
+
+@taiyomoe/storybook:build: cache miss, executing 2abf1ca0864c0310
+@taiyomoe/web:build: cache miss, executing a48ddcd1c164e71d
+@taiyomoe/storybook:build: 
+@taiyomoe/storybook:build: > @taiyomoe/storybook@1.0.0 build /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/storybook
+@taiyomoe/storybook:build: > storybook build
+@taiyomoe/storybook:build: 
+@taiyomoe/web:build: 
+@taiyomoe/web:build: > @taiyomoe/web@2.0.0 build /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web
+@taiyomoe/web:build: > pnpm -F @taiyomoe/db run db migrate deploy && pnpm -F @taiyomoe/logs run migrate && next build
+@taiyomoe/web:build: 
+@taiyomoe/web:build: 
+@taiyomoe/web:build: > @taiyomoe/db@0.1.0 db /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db
+@taiyomoe/web:build: > node ../../tooling/with-root-env.mjs prisma migrate deploy
+@taiyomoe/web:build: 
+@taiyomoe/storybook:build: 
+@taiyomoe/storybook:build: ┌  Building storybook v10.5.4
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Cleaning outputDir: storybook-static
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Loading presets
+@taiyomoe/web:build: Loaded Prisma config from prisma.config.ts.
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Prisma schema loaded from src/prisma.
+@taiyomoe/web:build: Datasource "db": PostgreSQL database "taiyo", schema "public" at "localhost:5432"
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Error: P1001: Can't reach database server at `localhost:5432`
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Please make sure your database server is running at `localhost:5432`.
+@taiyomoe/web:build: /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db:
+@taiyomoe/web:build:  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @taiyomoe/db@0.1.0 db: `node ../../tooling/with-root-env.mjs prisma migrate deploy`
+@taiyomoe/web:build: Exit status 1
+@taiyomoe/web:build:  ELIFECYCLE  Command failed with exit code 1.
+@taiyomoe/storybook:build:  ELIFECYCLE  Command failed.
+@taiyomoe/web#build:  ERROR  command (/home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web) /home/berkwe/.local/bin/pnpm run build exited (1)
+
+ Tasks:    0 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    5.137s 
+Failed:    @taiyomoe/web#build
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.
+
+Exit status: 1
+
+Actual privileged launch command: sudo -n bash start-local.sh
+Input: no stdin
+Literal output:
+sudo: a password is required
+Exit status: 1
+Actual root startup not exercised; launcher sudo HOME/PATH branch exercised with fixtures and simulated environment.

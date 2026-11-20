@@ -75,6 +75,32 @@ export interface MandownSearchOutput {
   }
 }
 
+export interface MandownSourceDiscoveryOutput {
+  threshold: number
+  links: Array<{
+    provider: MandownSourceProvider
+    url: string
+    language: string | null
+    method: "SAME_DIRECT_LINK" | "SAME_IDENTIFIER" | "SAME_JEV"
+    metadata_status: string
+    metadata_error?: string | null
+  }>
+  providers: Array<{
+    provider: string
+    resolution: string
+    comparisons: Array<{
+      status: string
+      percentage: number | null
+      cache_hit?: boolean
+      cache_key?: string
+      candidate_url: string
+      error?: string | null
+    }>
+  }>
+  errors: Array<{ decision: string; provider?: string; error?: string }>
+  timings: Record<string, unknown>
+}
+
 export interface MandownSourceDetailsOutput {
   metadata: {
     title: string
@@ -438,6 +464,12 @@ export const mandownMangaDetails = (anilistId: number) =>
   runMandown<MandownMangaDetailsOutput>(
     ["manga-details", String(anilistId)],
     90_000,
+  )
+
+export const mandownSearchSources = (anilistId: number) =>
+  runMandown<MandownSourceDiscoveryOutput>(
+    ["search-sources", String(anilistId)],
+    240_000,
   )
 
 export async function mandownSourceDetails(url: string) {

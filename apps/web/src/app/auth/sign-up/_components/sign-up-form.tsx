@@ -49,7 +49,7 @@ export const SignUpForm = () => {
     await authClient.signUp.email({
       ...pick(values, ["email", "username", "password"]),
       name: values.username,
-      callbackURL: "/tr",
+      callbackURL: "/auth/verify-email?verified=1",
       fetchOptions: {
         headers: { "x-captcha-response": values.turnstileToken },
         onSuccess: () => goToStep("verificationEmailSent"),

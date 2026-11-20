@@ -1,14 +1,25 @@
 import { createHash } from "node:crypto"
 import { cacheClient } from "@taiyomoe/cache"
 import { type NextRequest, NextResponse } from "next/server"
+import { isAllowedWriteOrigin, publicRequestOrigins } from "./request-origin"
 
 export function rejectCrossOriginWrite(request: NextRequest) {
   const origin = request.headers.get("origin")
   const fetchSite = request.headers.get("sec-fetch-site")
+  const expectedOrigins = publicRequestOrigins(request)
   if (
-    (origin && origin !== request.nextUrl.origin) ||
+    (origin && !isAllowedWriteOrigin(origin, expectedOrigins)) ||
     (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite))
   ) {
+    console.warn("[api-security] Cross-origin write rejected", {
+      path: request.nextUrl.pathname,
+      origin,
+      expectedOrigins: [...expectedOrigins],
+      fetchSite,
+      host: request.headers.get("host"),
+      forwardedHost: request.headers.get("x-forwarded-host"),
+      requestId: request.headers.get("x-request-id"),
+    })
     return NextResponse.json(
       { error: "Geçersiz istek kaynağı." },
       { status: 403 },

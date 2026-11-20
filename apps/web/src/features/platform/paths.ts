@@ -41,8 +41,10 @@ export const paths = {
   profile: (locale: Locale) => `/${locale}/${segments[locale].profile}`,
   about: (locale: Locale) => `/${locale}/${segments[locale].about}`,
   market: (locale: Locale) => `/${locale}/${segments[locale].market}`,
-  translate: () => "/translate",
-  translateSeries: (catalogSeriesId: string) => `/translate/${catalogSeriesId}`,
+  translate: (locale: Locale) => `/${locale}/translate`,
+  translateSeries: (locale: Locale, catalogSeriesId: string) =>
+    `/${locale}/translate/${catalogSeriesId}`,
+  translateRequests: (locale: Locale) => `/${locale}/translate/serilerim`,
 }
 
 export const slugify = (value: string) =>

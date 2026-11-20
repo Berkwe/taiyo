@@ -1,6 +1,6 @@
 import { authClient } from "@taiyomoe/auth/client"
 import Link from "next/link"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { IdCardIcon } from "~/components/icons/id-card-icon"
 import { SettingsIcon } from "~/components/icons/settings-icon"
@@ -13,17 +13,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown"
+import type { Locale } from "~/features/platform/domain"
+import { paths } from "~/features/platform/paths"
 import { useAuth } from "~/stores/auth.store"
 import { NavbarCommonContent } from "./navbar-common-content"
 
 export const NavbarAuthedContent = () => {
   const t = useTranslations("global")
-  const { user, signOut } = useAuth()
+  const locale = useLocale() as Locale
+  const { user } = useAuth()
 
   const handleSignOut = async () => {
-    await authClient.signOut()
-    signOut()
-    toast.success("Signed out successfully")
+    const { error } = await authClient.signOut()
+
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+
+    window.location.assign(paths.home(locale))
   }
 
   return (

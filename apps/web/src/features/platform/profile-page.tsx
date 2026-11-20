@@ -11,6 +11,7 @@ import { ReadingHistory } from "~/components/platform/reading-history"
 import { debugAccounts } from "~/features/debug/config"
 import { getDebugViewerRole, isDebugMode } from "~/features/debug/viewer"
 import { getSession } from "~/utils/get-session"
+import { getSettings } from "~/utils/get-settings"
 import type { Locale } from "./domain"
 import { paths } from "./paths"
 import { localeAlternates, pageMetadata } from "./seo"
@@ -36,9 +37,10 @@ export async function ProfilePage({
   locale: Locale
   tab?: "profile" | "settings"
 }) {
-  const [session, debugRole] = await Promise.all([
+  const [session, debugRole, settings] = await Promise.all([
     getSession(),
     getDebugViewerRole(),
+    getSettings(),
   ])
   const previewRole = debugRole && debugRole !== "GUEST" ? debugRole : null
   const realUser = debugRole === null ? session?.user : null
@@ -109,6 +111,7 @@ export async function ProfilePage({
           <ProfilePreferences
             authenticated={Boolean(realUser || previewRole)}
             canPersist={Boolean(realUser)}
+            initialShowAdultAniListResults={settings.showAdultAniListResults}
             initialTranslationLanguage="tr"
             locale={locale}
           />

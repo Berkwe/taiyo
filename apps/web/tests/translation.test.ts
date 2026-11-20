@@ -28,12 +28,25 @@ import {
   translationConfig,
 } from "../src/features/translation/pricing"
 import {
+  compareCatalogChapterNumbers,
+  consolidateDuplicateSources,
+  defaultCatalogSourceVisibility,
+  filterAniListItemsByAdultFlag,
+  filterCatalogEntriesBySourceAvailability,
+  firstAvailableSourceDetails,
+  loadPublicCatalogSelection,
   MandownSourceCatalogProvider,
   normalizeCatalogQuery,
   normalizeSourceLanguage,
+  parseNaverSeriesChapterCount,
   preferPrimarySourceLanguages,
   syncCatalogSourceChapters,
 } from "../src/features/translation/provider"
+import {
+  orderSourceEditionsByAccess,
+  type SourceCatalogProvider,
+  sourceEditionHydrationTiers,
+} from "../src/features/translation/types"
 import { safeReturnPath } from "../src/utils/safe-return-path"
 
 test("catalog normalization supports Turkish characters", () => {
@@ -64,6 +77,47 @@ test("AniList source languages are normalized from metadata and URLs", () => {
   )
 })
 
+test("AniList adult results require an explicit flag and enabled setting", () => {
+  const items = [
+    { manga: { id: 1 }, title: "safe" },
+    { manga: { id: 2 }, title: "adult" },
+    { manga: { id: 3 }, title: "unknown" },
+  ]
+  const flags = new Map([
+    [1, false],
+    [2, true],
+  ])
+  assert.deepEqual(
+    filterAniListItemsByAdultFlag(items, flags, false).map(
+      (item) => item.title,
+    ),
+    ["safe"],
+  )
+  assert.deepEqual(
+    filterAniListItemsByAdultFlag(items, flags, true).map((item) => item.title),
+    ["safe", "adult"],
+  )
+})
+
+test("catalog search can require at least one resolved source", () => {
+  const entries = [
+    { title: "available", sources: [{ provider: "fixture" }] },
+    { title: "unavailable", sources: [] },
+  ]
+  assert.deepEqual(
+    filterCatalogEntriesBySourceAvailability(entries, false).map(
+      (entry) => entry.title,
+    ),
+    ["available", "unavailable"],
+  )
+  assert.deepEqual(
+    filterCatalogEntriesBySourceAvailability(entries, true).map(
+      (entry) => entry.title,
+    ),
+    ["available"],
+  )
+})
+
 test("English and Korean sources take priority over other supported languages", () => {
   const source = (
     language: "en" | "ko" | "fr",
@@ -78,6 +132,7 @@ test("English and Korean sources take priority over other supported languages", 
     site: provider,
     type: "STREAMING",
     is_disabled: false,
+    fallbackUrls: [],
   })
   assert.deepEqual(
     preferPrimarySourceLanguages([
@@ -92,6 +147,211 @@ test("English and Korean sources take priority over other supported languages", 
       (item) => item.language,
     ),
     ["fr"],
+  )
+})
+
+test("free and paid Naver sources stay separate while true duplicates merge", () => {
+  const sources = consolidateDuplicateSources([
+    {
+      provider: "naver_series",
+      url: "https://series.naver.com/comic/detail.series?productNo=6575576",
+      fallbackUrls: [],
+      language: "ko",
+      site: "Naver Series",
+      type: "STREAMING",
+      is_disabled: false,
+    },
+    {
+      provider: "naver",
+      url: "https://comic.naver.com/webtoon/list?titleId=780170",
+      fallbackUrls: [],
+      language: "ko",
+      site: "Naver Webtoon",
+      type: "STREAMING",
+      is_disabled: false,
+    },
+    {
+      provider: "webtoons",
+      url: "https://www.webtoons.com/en/fantasy/example/list?title_no=1",
+      fallbackUrls: [],
+      language: "en",
+      site: "WEBTOON",
+      type: "STREAMING",
+      is_disabled: false,
+    },
+    {
+      provider: "webtoons",
+      url: "https://m.webtoons.com/en/fantasy/example/list?title_no=1",
+      fallbackUrls: [],
+      language: "en",
+      site: "WEBTOON",
+      type: "STREAMING",
+      is_disabled: false,
+    },
+  ])
+  assert.equal(sources.length, 3)
+  const freeNaver = sources.find((source) => source.provider === "naver")
+  const paidNaver = sources.find((source) => source.provider === "naver_series")
+  assert.deepEqual(freeNaver?.fallbackUrls, [])
+  assert.deepEqual(paidNaver?.fallbackUrls, [])
+  const english = sources.find((source) => source.language === "en")
+  assert.deepEqual(english?.fallbackUrls, [
+    "https://m.webtoons.com/en/fantasy/example/list?title_no=1",
+  ])
+})
+
+test("available sources are ordered and hydrated before paid sources", () => {
+  const paid = {
+    id: "paid",
+    accessStatus: "paid-account-required" as const,
+    priority: 100,
+  }
+  const lowerPriorityAvailable = {
+    id: "available-low",
+    accessStatus: "available" as const,
+    priority: 10,
+  }
+  const higherPriorityAvailable = {
+    id: "available-high",
+    accessStatus: "available" as const,
+    priority: 20,
+  }
+  const ordered = orderSourceEditionsByAccess([
+    paid,
+    lowerPriorityAvailable,
+    higherPriorityAvailable,
+  ])
+  assert.deepEqual(
+    ordered.map((source) => source.id),
+    ["available-high", "available-low", "paid"],
+  )
+  const [availableTier, paidTier] = sourceEditionHydrationTiers(ordered)
+  assert.deepEqual(
+    availableTier.map((source) => source.id),
+    ["available-high", "available-low"],
+  )
+  assert.deepEqual(
+    paidTier.map((source) => source.id),
+    ["paid"],
+  )
+})
+
+test("new Chinese catalog sources stay hidden until management publishes them", () => {
+  assert.equal(defaultCatalogSourceVisibility("zh"), false)
+  assert.equal(defaultCatalogSourceVisibility("en"), true)
+  assert.equal(defaultCatalogSourceVisibility("ko"), true)
+})
+
+test("request validation hydrates the selected source before checking chapters", async () => {
+  const hydratedEdition = {
+    id: "edition",
+    publicSourceLabel: "İngilizce-1",
+    sourceLanguage: "en" as const,
+    sourceLanguageLabel: "İngilizce",
+    provider: "webtoons" as const,
+    providerLabel: "İngilizce-1",
+    accessStatus: "available" as const,
+    description: "Fixture source",
+    chapterCount: 1,
+    lastChapterNumber: "1",
+    priority: 100,
+    chaptersLoaded: true,
+    chapters: [
+      {
+        id: "chapter",
+        externalChapterId: "external-chapter",
+        number: "1",
+        sortKey: 1,
+      },
+    ],
+  }
+  let hydrationRequested = false
+  const provider: SourceCatalogProvider = {
+    searchSeries: async () => [],
+    selectSeries: async () => {
+      throw new Error("not used")
+    },
+    getSeriesDetails: async () => ({
+      id: "series",
+      canonicalKey: "fixture",
+      title: "Fixture",
+      originalTitle: "Fixture",
+      alternativeTitles: [],
+      description: "Fixture",
+      cover: "/placeholders/series-cover.svg",
+      publicationStatus: "ongoing",
+      editions: [
+        {
+          ...hydratedEdition,
+          chapterCount: 0,
+          lastChapterNumber: "—",
+          chaptersLoaded: false,
+          chapters: [],
+        },
+      ],
+    }),
+    getSourceEditionDetails: async () => {
+      hydrationRequested = true
+      return hydratedEdition
+    },
+    listSourceEditions: async () => [],
+    listSourceChapters: async () => [],
+    refreshSourceEdition: async () => undefined,
+  }
+  const selection = await loadPublicCatalogSelection(
+    "series",
+    "edition",
+    provider,
+  )
+  assert.equal(hydrationRequested, true)
+  assert.equal(selection?.edition.chapters[0]?.id, "chapter")
+})
+
+test("Naver Series total chapter count is read from its public catalog page", () => {
+  assert.equal(
+    parseNaverSeriesChapterCount(
+      '<span class="end_total_episode">총 <strong>72</strong>화</span>',
+    ),
+    72,
+  )
+  assert.equal(parseNaverSeriesChapterCount("<html>missing</html>"), null)
+})
+
+test("source details fall back after the preferred source fails", async () => {
+  const attempts: string[] = []
+  const fallback =
+    "https://series.naver.com/comic/detail.series?productNo=6575576"
+  const result = await firstAvailableSourceDetails(
+    ["https://comic.naver.com/webtoon/list?titleId=780170", fallback],
+    async (url) => {
+      attempts.push(url)
+      if (url.includes("comic.naver.com"))
+        throw new Error("preferred domain unavailable")
+      return {
+        metadata: {
+          title: "Fixture",
+          authors: [],
+          url,
+          genres: [],
+          description: "",
+          cover_art: "",
+          title_slug: "fixture",
+        },
+        chapters: [],
+      }
+    },
+  )
+  assert.equal(result.url, fallback)
+  assert.equal(attempts.length, 2)
+})
+
+test("descending source chapters are ordered by their real chapter number", () => {
+  const chapters = ["225", "224", "10", "2", "1"]
+    .map((number) => ({ number }))
+    .sort(compareCatalogChapterNumbers)
+  assert.deepEqual(
+    chapters.map((chapter) => chapter.number),
+    ["1", "2", "10", "224", "225"],
   )
 })
 
@@ -160,6 +420,14 @@ test(
     assert.ok(
       selected.editions.some((edition) => edition.provider === "naver_series"),
     )
+    assert.ok(
+      selected.editions.some(
+        (edition) =>
+          edition.provider === "webtoons" &&
+          edition.sourceLanguage === "en" &&
+          edition.accessStatus === "available",
+      ),
+    )
 
     const details = await provider.getSeriesDetails(selected.id)
     assert.ok(details)
@@ -219,6 +487,7 @@ test("catalog refresh keeps a chapter stable when its source URL changes", async
         chapterNumber: "7",
         sortKey: 1,
         title: "Old title",
+        isPublic: false,
       },
     })
     const removed = await db.catalogSourceChapter.create({
@@ -260,6 +529,7 @@ test("catalog refresh keeps a chapter stable when its source URL changes", async
     assert.equal(chapters[0]?.chapterNumber, "7")
     assert.equal(chapters[0]?.title, "Updated title")
     assert.equal(chapters[0]?.isAvailable, true)
+    assert.equal(chapters[0]?.isPublic, false)
     assert.equal(chapters[1]?.id, removed.id)
     assert.equal(chapters[1]?.isAvailable, false)
 

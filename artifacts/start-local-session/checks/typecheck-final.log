@@ -1,0 +1,100 @@
+
+> taiyo@ typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite
+> node tooling/with-root-env.mjs turbo typecheck
+
+• turbo 2.10.7
+
+   • Packages in scope: @taiyomoe/auth, @taiyomoe/cache, @taiyomoe/config, @taiyomoe/db, @taiyomoe/email, @taiyomoe/github, @taiyomoe/io-worker, @taiyomoe/logs, @taiyomoe/meilisearch, @taiyomoe/messages, @taiyomoe/messaging, @taiyomoe/s3, @taiyomoe/schemas, @taiyomoe/storage, @taiyomoe/storybook, @taiyomoe/trpc, @taiyomoe/types, @taiyomoe/typescript, @taiyomoe/ui, @taiyomoe/utils, @taiyomoe/web, @types/global-types
+   • Running typecheck in 22 packages
+   • Remote caching disabled
+
+@taiyomoe/s3:typecheck: cache hit, replaying logs 010f9b053071ee5f
+@taiyomoe/s3:typecheck: 
+@taiyomoe/s3:typecheck: > @taiyomoe/s3@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/s3
+@taiyomoe/s3:typecheck: > tsc --noEmit
+@taiyomoe/s3:typecheck: 
+@taiyomoe/ui:typecheck: cache hit, replaying logs 0def1b9bf811d74a
+@taiyomoe/ui:typecheck: 
+@taiyomoe/ui:typecheck: > @taiyomoe/ui@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/ui
+@taiyomoe/ui:typecheck: > tsc --noEmit
+@taiyomoe/ui:typecheck: 
+@taiyomoe/config:typecheck: cache hit, replaying logs e7b302ce48badeec
+@taiyomoe/config:typecheck: 
+@taiyomoe/config:typecheck: > @taiyomoe/config@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/config
+@taiyomoe/config:typecheck: > tsc --noEmit
+@taiyomoe/config:typecheck: 
+@taiyomoe/utils:typecheck: cache hit, replaying logs 9efe71c4f459884a
+@taiyomoe/utils:typecheck: 
+@taiyomoe/utils:typecheck: > @taiyomoe/utils@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/utils
+@taiyomoe/utils:typecheck: > tsc --noEmit
+@taiyomoe/utils:typecheck: 
+@taiyomoe/storage:typecheck: cache hit, replaying logs 5987b02bd2efe6e5
+@taiyomoe/storage:typecheck: 
+@taiyomoe/storage:typecheck: > @taiyomoe/storage@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/storage
+@taiyomoe/storage:typecheck: > tsc --noEmit
+@taiyomoe/storage:typecheck: 
+@taiyomoe/email:typecheck: cache hit, replaying logs cf8083b66c56871f
+@taiyomoe/email:typecheck: 
+@taiyomoe/email:typecheck: > @taiyomoe/email@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/email
+@taiyomoe/email:typecheck: > tsc --noEmit
+@taiyomoe/email:typecheck: 
+@taiyomoe/cache:typecheck: cache hit, replaying logs 005a8447db28885d
+@taiyomoe/cache:typecheck: 
+@taiyomoe/cache:typecheck: > @taiyomoe/cache@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/cache
+@taiyomoe/cache:typecheck: > tsc --noEmit
+@taiyomoe/cache:typecheck: 
+@taiyomoe/db:typecheck: cache hit, replaying logs 8f6f19dd4ce32dae
+@taiyomoe/db:typecheck: 
+@taiyomoe/db:typecheck: > @taiyomoe/db@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db
+@taiyomoe/db:typecheck: > tsc --noEmit
+@taiyomoe/db:typecheck: 
+@taiyomoe/schemas:typecheck: cache hit, replaying logs 1c738afc02a2024b
+@taiyomoe/schemas:typecheck: 
+@taiyomoe/schemas:typecheck: > @taiyomoe/schemas@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/schemas
+@taiyomoe/schemas:typecheck: > tsc --noEmit
+@taiyomoe/schemas:typecheck: 
+@taiyomoe/meilisearch:typecheck: cache hit, replaying logs d2bfd2142cc982d7
+@taiyomoe/meilisearch:typecheck: 
+@taiyomoe/meilisearch:typecheck: > @taiyomoe/meilisearch@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/meilisearch
+@taiyomoe/meilisearch:typecheck: > tsc --noEmit
+@taiyomoe/meilisearch:typecheck: 
+@taiyomoe/types:typecheck: cache hit, replaying logs 952bceba94f7f607
+@taiyomoe/types:typecheck: 
+@taiyomoe/types:typecheck: > @taiyomoe/types@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/types
+@taiyomoe/types:typecheck: > tsc --noEmit
+@taiyomoe/types:typecheck: 
+@taiyomoe/storybook:typecheck: cache hit, replaying logs 062cfbda7efbc03a
+@taiyomoe/storybook:typecheck: 
+@taiyomoe/storybook:typecheck: > @taiyomoe/storybook@1.0.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/storybook
+@taiyomoe/storybook:typecheck: > tsc --noEmit
+@taiyomoe/storybook:typecheck: 
+@taiyomoe/messaging:typecheck: cache hit, replaying logs 13fd28850e231e67
+@taiyomoe/messaging:typecheck: 
+@taiyomoe/messaging:typecheck: > @taiyomoe/messaging@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/messaging
+@taiyomoe/messaging:typecheck: > tsc --noEmit
+@taiyomoe/messaging:typecheck: 
+@taiyomoe/auth:typecheck: cache hit, replaying logs f360af0977e03548
+@taiyomoe/auth:typecheck: 
+@taiyomoe/auth:typecheck: > @taiyomoe/auth@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/auth
+@taiyomoe/auth:typecheck: > tsc --noEmit
+@taiyomoe/auth:typecheck: 
+@taiyomoe/io-worker:typecheck: cache hit, replaying logs cc3e567b5bdfc922
+@taiyomoe/io-worker:typecheck: 
+@taiyomoe/io-worker:typecheck: > @taiyomoe/io-worker@1.0.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/io-worker
+@taiyomoe/io-worker:typecheck: > tsc --noEmit
+@taiyomoe/io-worker:typecheck: 
+@taiyomoe/trpc:typecheck: cache hit, replaying logs e1d147da250d49ef
+@taiyomoe/trpc:typecheck: 
+@taiyomoe/trpc:typecheck: > @taiyomoe/trpc@0.1.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/trpc
+@taiyomoe/trpc:typecheck: > tsc --noEmit
+@taiyomoe/trpc:typecheck: 
+@taiyomoe/web:typecheck: cache hit, replaying logs 2ac5e838c1e00b48
+@taiyomoe/web:typecheck: 
+@taiyomoe/web:typecheck: > @taiyomoe/web@2.0.0 typecheck /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web
+@taiyomoe/web:typecheck: > tsc --noEmit
+@taiyomoe/web:typecheck: 
+
+ Tasks:    17 successful, 17 total
+Cached:    17 cached, 17 total
+  Time:    56ms >>> FULL TURBO
+

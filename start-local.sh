@@ -7,9 +7,24 @@ cd "$PROJECT_DIR"
 
 echo "NovoraScans yerel ortamı hazırlanıyor…"
 
-if [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
+# sudo replaces HOME and PATH; find the invoking user's local Node installation.
+RUNTIME_HOME="$HOME"
+if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
+  if ! USER_ENTRY="$(getent passwd "$SUDO_USER")"; then
+    echo "Hata: '$SUDO_USER' kullanıcısının ev dizini bulunamadı." >&2
+    exit 1
+  fi
+  IFS=: read -r _ _ _ _ _ RUNTIME_HOME _ <<< "$USER_ENTRY"
+  if [[ -z "$RUNTIME_HOME" ]]; then
+    echo "Hata: '$SUDO_USER' kullanıcısının ev dizini bulunamadı." >&2
+    exit 1
+  fi
+fi
+export PATH="$RUNTIME_HOME/.local/bin:$PATH"
+
+if [[ -s "${NVM_DIR:-$RUNTIME_HOME/.nvm}/nvm.sh" ]]; then
   # Use the repository's .nvmrc when that Node version is already installed.
-  source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+  source "${NVM_DIR:-$RUNTIME_HOME/.nvm}/nvm.sh"
     if ! nvm use --silent >/dev/null 2>&1; then
         echo "Hata: .nvmrc dosyasında belirtilen Node.js sürümü kurulu değil."
         echo "Kurmak için: nvm install"
@@ -24,8 +39,13 @@ for command in node corepack docker; do
   fi
 done
 
-if ! docker info >/dev/null 2>&1; then
-  echo "Hata: Docker çalışmıyor. Docker'ı açıp tekrar deneyin." >&2
+if ! DOCKER_STATUS="$(docker info 2>&1)"; then
+  printf '%s\n' "$DOCKER_STATUS" >&2
+  if [[ "$DOCKER_STATUS" == *"permission denied"* ]]; then
+    echo "Hata: Docker soketine erişim reddedildi. sudo bash start-local.sh ile tekrar deneyin." >&2
+  else
+    echo "Hata: Docker çalışmıyor. Docker'ı açıp tekrar deneyin." >&2
+  fi
   exit 1
 fi
 

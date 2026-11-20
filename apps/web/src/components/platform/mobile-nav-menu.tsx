@@ -114,7 +114,7 @@ export function MobileNavMenu({
           </Link>
           <Link
             className="flex items-center gap-2 px-3 py-3 hover:bg-surface-raised"
-            href={paths.translate()}
+            href={paths.translate(locale)}
           >
             <Languages
               aria-hidden="true"

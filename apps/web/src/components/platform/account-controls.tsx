@@ -3,7 +3,6 @@
 import { authClient } from "@taiyomoe/auth/client"
 import { LogIn, LogOut, UserRound, Wrench } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import type { Locale } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
 
@@ -27,7 +26,6 @@ export function AccountControls({
   monochromeIcons?: boolean
   unreadNotifications?: number
 }) {
-  const router = useRouter()
   if (!authenticated) {
     return (
       <>
@@ -108,8 +106,9 @@ export function AccountControls({
         <button
           className={className}
           onClick={async () => {
-            await authClient.signOut()
-            router.refresh()
+            const { error } = await authClient.signOut()
+
+            if (!error) window.location.assign(paths.home(locale))
           }}
           type="button"
         >

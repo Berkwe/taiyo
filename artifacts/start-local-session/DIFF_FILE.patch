@@ -1,0 +1,12 @@
+--- /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/ORIGINAL.sh	2026-10-08 21:24:11.804634848 +0300
++++ /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/MODIFIED_FILE.sh	2026-10-08 21:24:11.804881045 +0300
+@@ -2,7 +2,8 @@
+ 
+ set -Eeuo pipefail
+ 
+-PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
++export PATH="$HOME/.local/bin:$PATH"
++PROJECT_DIR=/home/berkwe/Desktop/myProjects/NovoraScansSite
+ cd "$PROJECT_DIR"
+ 
+ echo "NovoraScans yerel ortamı hazırlanıyor…"

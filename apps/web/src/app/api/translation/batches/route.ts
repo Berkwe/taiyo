@@ -12,7 +12,10 @@ import { refundCampaignExcess } from "~/features/translation/campaign-accounting
 import { queueTranslationCampaignJob } from "~/features/translation/job-dispatcher"
 import { processMandownTranslationJob } from "~/features/translation/mandown-import"
 import { translationConfig } from "~/features/translation/pricing"
-import { getSourceCatalogProvider } from "~/features/translation/provider"
+import {
+  loadPublicCatalogSelection,
+  paidSourceNotice,
+} from "~/features/translation/provider"
 import { rejectCrossOriginWrite } from "~/utils/api-security"
 
 const schema = z
@@ -149,14 +152,15 @@ export async function POST(request: NextRequest) {
       { status: 429 },
     )
 
-  const series = await getSourceCatalogProvider().getSeriesDetails(
+  const selection = await loadPublicCatalogSelection(
     parsed.data.catalogSeriesId,
+    parsed.data.sourceEditionId,
   )
-  const edition = series?.editions.find(
-    (item) => item.id === parsed.data.sourceEditionId,
-  )
-  if (!series || !edition)
+  if (!selection)
     return NextResponse.json({ error: "Kaynak bulunamadı." }, { status: 404 })
+  const { series, edition } = selection
+  if (edition.accessStatus !== "available")
+    return NextResponse.json({ error: paidSourceNotice }, { status: 409 })
 
   try {
     const result = await db.$transaction(

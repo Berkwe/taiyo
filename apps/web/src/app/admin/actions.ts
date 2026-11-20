@@ -25,6 +25,88 @@ import { processMandownTranslationJob } from "~/features/translation/mandown-imp
 
 const adminPath = "/admin"
 
+export async function updateCatalogSourceVisibility(formData: FormData) {
+  const actor = await requireManagementUser("content:publish")
+  const sourceEditionId = z
+    .string()
+    .uuid()
+    .parse(formData.get("sourceEditionId"))
+  const editionIsPublic = formData.get("editionIsPublic") === "on"
+  const visibleChapterIds = z
+    .array(z.string().uuid())
+    .max(5_000)
+    .parse(
+      formData
+        .getAll("visibleChapterIds")
+        .filter((value): value is string => typeof value === "string"),
+    )
+  const uniqueVisibleChapterIds = [...new Set(visibleChapterIds)]
+  const edition = await db.catalogSourceEdition.findUniqueOrThrow({
+    where: { id: sourceEditionId },
+    select: {
+      id: true,
+      isPublic: true,
+      chapters: {
+        where: { isAvailable: true },
+        select: { id: true, isPublic: true },
+      },
+    },
+  })
+  const availableChapterIds = new Set(
+    edition.chapters.map((chapter) => chapter.id),
+  )
+  if (
+    uniqueVisibleChapterIds.some(
+      (chapterId) => !availableChapterIds.has(chapterId),
+    )
+  ) {
+    throw new Error("Seçilen bölümlerden biri bu katalog kaynağına ait değil.")
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.catalogSourceEdition.update({
+      where: { id: edition.id },
+      data: { isPublic: editionIsPublic },
+    })
+    await tx.catalogSourceChapter.updateMany({
+      where: { sourceEditionId: edition.id },
+      data: { isPublic: false },
+    })
+    if (uniqueVisibleChapterIds.length) {
+      await tx.catalogSourceChapter.updateMany({
+        where: {
+          sourceEditionId: edition.id,
+          id: { in: uniqueVisibleChapterIds },
+          isAvailable: true,
+        },
+        data: { isPublic: true },
+      })
+    }
+    await tx.contentRevision.create({
+      data: {
+        entityType: "CATALOG_SOURCE",
+        entityId: edition.id,
+        action: "UPDATE",
+        actorId: actor.id,
+        before: {
+          isPublic: edition.isPublic,
+          visibleChapterIds: edition.chapters
+            .filter((chapter) => chapter.isPublic)
+            .map((chapter) => chapter.id),
+        },
+        after: {
+          isPublic: editionIsPublic,
+          visibleChapterIds: uniqueVisibleChapterIds,
+        },
+      },
+    })
+  })
+  revalidatePath(adminPath)
+  revalidatePath("/translate")
+  revalidatePath("/tr/translate")
+  revalidatePath("/en/translate")
+}
+
 export async function updateMockTranslationJob(formData: FormData) {
   const actor = await requireManagementUser("users:manage")
   const jobId = z.string().uuid().parse(formData.get("jobId"))
@@ -52,7 +134,7 @@ export async function updateMockTranslationJob(formData: FormData) {
   if (status !== "FAILED") {
     await processMandownTranslationJob(job.id, { retryProcessing: true })
     revalidatePath(adminPath)
-    revalidatePath("/translate")
+    revalidatePath("/tr/translate")
     return
   }
   const campaignStatus = "FAILED"
@@ -86,7 +168,7 @@ export async function updateMockTranslationJob(formData: FormData) {
           type: "TRANSLATION_CAMPAIGN",
           title: "Çeviri işlemi başarısız",
           message: "Desteklediğiniz çeviri talebinin durumu güncellendi.",
-          href: "/translate",
+          href: "/tr/translate",
           dedupeKey: `translation-job:${job.id}:${status}:${userId}`,
         },
         update: {},
@@ -104,7 +186,7 @@ export async function updateMockTranslationJob(formData: FormData) {
     })
   })
   revalidatePath(adminPath)
-  revalidatePath("/translate")
+  revalidatePath("/tr/translate")
 }
 
 export async function refundTranslationCampaign(formData: FormData) {
@@ -153,7 +235,7 @@ export async function refundTranslationCampaign(formData: FormData) {
           type: "TRANSLATION_CAMPAIGN",
           title: "Çeviri katkısı iade edildi",
           message: `${contribution.credits} kredi hesabınıza geri yüklendi.`,
-          href: "/translate",
+          href: "/tr/translate",
           dedupeKey: `translation-refund:${contribution.id}:notification`,
         },
         update: {},
@@ -310,14 +392,14 @@ export async function addUserCredits(formData: FormData) {
         type: "ACCOUNT_UPDATE",
         title: "Kredi bakiyeniz güncellendi",
         message: `Hesabınıza ${input.credits} kredi eklendi.`,
-        href: "/translate",
+        href: "/tr/translate",
         dedupeKey: `${idempotencyKey}:notification`,
       },
       update: {},
     })
   })
   revalidatePath(adminPath)
-  revalidatePath("/translate")
+  revalidatePath("/tr/translate")
 }
 
 export async function updateAccountState(formData: FormData) {

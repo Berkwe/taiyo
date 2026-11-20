@@ -1,0 +1,21 @@
+
+> taiyo@ test:auth /home/berkwe/Desktop/myProjects/NovoraScansSite
+> corepack pnpm --filter @taiyomoe/web exec tsx --test tests/auth.test.ts
+
+✔ normal email sign-in does not depend on a captcha token (5.611574ms)
+✔ normal sign-in still rejects missing credentials (1.606206ms)
+✔ registration requires an independently entered matching confirmation (2.451438ms)
+✔ temporary and unknown email providers are rejected (0.532412ms)
+✔ permanent email whitelist accepts major providers (0.442396ms)
+✔ duplicate usernames have a localized auth error mapping (0.247233ms)
+✔ development auth accepts the current same-host private LAN origin (43.943707ms)
+✔ dynamic auth origins stay disabled in production and for foreign hosts (1.098802ms)
+✔ mobile account verification emails use the current LAN host and result page (1.467671ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1162.819662

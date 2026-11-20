@@ -1,0 +1,52 @@
+
+> taiyo@ build /home/berkwe/Desktop/myProjects/NovoraScansSite
+> node tooling/with-root-env.mjs turbo build
+
+• turbo 2.10.7
+
+   • Packages in scope: @taiyomoe/auth, @taiyomoe/cache, @taiyomoe/config, @taiyomoe/db, @taiyomoe/email, @taiyomoe/github, @taiyomoe/io-worker, @taiyomoe/logs, @taiyomoe/meilisearch, @taiyomoe/messages, @taiyomoe/messaging, @taiyomoe/s3, @taiyomoe/schemas, @taiyomoe/storage, @taiyomoe/storybook, @taiyomoe/trpc, @taiyomoe/types, @taiyomoe/typescript, @taiyomoe/ui, @taiyomoe/utils, @taiyomoe/web, @types/global-types
+   • Running build in 22 packages
+   • Remote caching disabled
+
+@taiyomoe/storybook:build: cache miss, executing 2abf1ca0864c0310
+@taiyomoe/web:build: cache miss, executing a48ddcd1c164e71d
+@taiyomoe/storybook:build: 
+@taiyomoe/storybook:build: > @taiyomoe/storybook@1.0.0 build /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/storybook
+@taiyomoe/storybook:build: > storybook build
+@taiyomoe/storybook:build: 
+@taiyomoe/web:build: 
+@taiyomoe/web:build: > @taiyomoe/web@2.0.0 build /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web
+@taiyomoe/web:build: > pnpm -F @taiyomoe/db run db migrate deploy && pnpm -F @taiyomoe/logs run migrate && next build
+@taiyomoe/web:build: 
+@taiyomoe/web:build: 
+@taiyomoe/web:build: > @taiyomoe/db@0.1.0 db /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db
+@taiyomoe/web:build: > node ../../tooling/with-root-env.mjs prisma migrate deploy
+@taiyomoe/web:build: 
+@taiyomoe/storybook:build: 
+@taiyomoe/storybook:build: ┌  Building storybook v10.5.4
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Cleaning outputDir: storybook-static
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Loading presets
+@taiyomoe/web:build: Loaded Prisma config from prisma.config.ts.
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Prisma schema loaded from src/prisma.
+@taiyomoe/web:build: Datasource "db": PostgreSQL database "taiyo", schema "public" at "localhost:5432"
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Error: P1001: Can't reach database server at `localhost:5432`
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Please make sure your database server is running at `localhost:5432`.
+@taiyomoe/web:build: /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db:
+@taiyomoe/web:build:  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @taiyomoe/db@0.1.0 db: `node ../../tooling/with-root-env.mjs prisma migrate deploy`
+@taiyomoe/web:build: Exit status 1
+@taiyomoe/web:build:  ELIFECYCLE  Command failed with exit code 1.
+@taiyomoe/storybook:build:  ELIFECYCLE  Command failed.
+@taiyomoe/web#build:  ERROR  command (/home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web) /home/berkwe/.local/bin/pnpm run build exited (1)
+
+ Tasks:    0 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    4.797s 
+Failed:    @taiyomoe/web#build
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.

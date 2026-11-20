@@ -49,7 +49,7 @@ export async function AppHeader({ locale }: { locale: Locale }) {
             className="h-auto w-full max-w-56 object-contain object-left sm:max-w-72 lg:max-w-80 dark:hidden"
             height={700}
             priority
-            src="/assets/brand/novora-header-wordmark-light.png"
+            src="/assets/brand/novora-wordmark-light-transparent.png"
             width={2176}
           />
           <Image
@@ -57,7 +57,7 @@ export async function AppHeader({ locale }: { locale: Locale }) {
             className="hidden h-auto w-full max-w-56 object-contain object-left sm:max-w-72 lg:max-w-80 dark:block"
             height={700}
             priority
-            src="/assets/brand/novora-header-wordmark-dark.png"
+            src="/assets/brand/novora-wordmark-dark-transparent.png"
             width={2176}
           />
         </Link>
@@ -91,7 +91,7 @@ export async function AppHeader({ locale }: { locale: Locale }) {
           </Link>
           <Link
             className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-surface-raised"
-            href={paths.translate()}
+            href={paths.translate(locale)}
           >
             <Languages
               aria-hidden="true"

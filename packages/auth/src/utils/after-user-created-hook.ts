@@ -3,10 +3,15 @@ import { getUserIndexItem, meilisearchClient } from "@taiyomoe/meilisearch"
 import { env } from "../env"
 
 export const provisionUserAfterCommit = async (id: string) => {
-  const user = await db.user.findUniqueOrThrow({
+  const user = await db.user.findUnique({
     where: { id },
     select: { email: true },
   })
+
+  // With email verification enabled, Better Auth deliberately returns a
+  // synthetic user for an email that is already registered. That user is not
+  // persisted, so there is nothing to provision.
+  if (!user) return
 
   await db.$transaction([
     db.userProfile.upsert({

@@ -8,6 +8,56 @@ await mkdir(artifactDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 
 try {
+  const adultSettingContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  })
+  const adultSettingPage = await adultSettingContext.newPage()
+  await adultSettingPage.goto(`${baseUrl}/tr/profil?tab=settings`, {
+    waitUntil: "networkidle",
+  })
+  const adultSetting = adultSettingPage.getByRole("switch", {
+    name: "Yetişkin AniList sonuçlarını göster",
+  })
+  assert.equal(await adultSetting.getAttribute("aria-checked"), "false")
+  await adultSetting.click()
+  assert.equal(await adultSetting.getAttribute("aria-checked"), "true")
+  let adultSearchEnabled = false
+  let sourceFilterEnabled = false
+  await adultSettingPage.route(
+    "**/api/translation/catalog?q=*&includeAdult=*",
+    (route) => {
+      const url = new URL(route.request().url())
+      adultSearchEnabled = url.searchParams.get("includeAdult") === "1"
+      sourceFilterEnabled = url.searchParams.get("onlyWithSources") === "1"
+      return route.fulfill({
+        body: JSON.stringify({ results: [] }),
+        contentType: "application/json",
+        status: 200,
+      })
+    },
+  )
+  await adultSettingPage.goto(`${baseUrl}/translate`, {
+    waitUntil: "networkidle",
+  })
+  const sourceFilter = adultSettingPage.getByRole("checkbox", {
+    name: "Yalnızca kaynağı bulunan serileri göster",
+  })
+  assert.equal(await sourceFilter.isChecked(), false)
+  await sourceFilter.check()
+  assert.equal(await sourceFilter.isChecked(), true)
+  await adultSettingPage.screenshot({
+    path: `${artifactDir}/source-filter-translate-mobile.png`,
+  })
+  await adultSettingPage
+    .getByRole("textbox", { name: "Seri adı" })
+    .fill("adult preference fixture")
+  await adultSettingPage
+    .getByRole("heading", { name: "Sonuç bulunamadı" })
+    .waitFor()
+  assert.equal(adultSearchEnabled, true)
+  assert.equal(sourceFilterEnabled, true)
+  await adultSettingContext.close()
+
   const loadingContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
   })
@@ -113,6 +163,35 @@ try {
   const multipleSourceContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
   })
+  await multipleSourceContext.addInitScript(() => {
+    Object.defineProperty(globalThis, "LanguageDetector", {
+      configurable: true,
+      value: {
+        availability: async () => "available",
+        create: async () => ({
+          destroy: () => undefined,
+          detect: async () => [{ confidence: 0.99, detectedLanguage: "en" }],
+        }),
+      },
+    })
+    Object.defineProperty(globalThis, "Translator", {
+      configurable: true,
+      value: {
+        availability: async () => "available",
+        create: async (/** @type {{ sourceLanguage: string }} */ options) => {
+          Object.defineProperty(globalThis, "__novoraTranslatorSource", {
+            configurable: true,
+            value: options.sourceLanguage,
+          })
+          return {
+            destroy: () => undefined,
+            translate: async (/** @type {string} */ text) =>
+              `Türkçe çeviri: ${text}`,
+          }
+        },
+      },
+    })
+  })
   const multipleSourcePage = await multipleSourceContext.newPage()
   let multipleSourceSearchRequests = 0
   multipleSourcePage.on("request", (request) => {
@@ -185,11 +264,40 @@ try {
       candidate.request().method() === "POST",
   )
   await multipleSourceCard.click()
-  assert.equal((await multipleSourceSelection).status(), 200)
-  assert.equal(new URL(multipleSourcePage.url()).pathname, "/translate")
+  const multipleSourceSelectionResponse = await multipleSourceSelection
+  assert.equal(
+    multipleSourceSelectionResponse.status(),
+    200,
+    await multipleSourceSelectionResponse.text(),
+  )
+  assert.equal(new URL(multipleSourcePage.url()).pathname, "/tr/translate")
   await multipleSourcePage
     .getByRole("heading", { name: "Kaynak seç" })
     .waitFor()
+  const translateDescriptionButton = multipleSourcePage.getByRole("button", {
+    name: "Seri açıklamasını çevir",
+  })
+  const description = translateDescriptionButton.locator(
+    "xpath=../following-sibling::p",
+  )
+  const originalDescription = await description.textContent()
+  await translateDescriptionButton.click()
+  await multipleSourcePage
+    .getByText(/^Türkçe çeviri:/, { exact: false })
+    .waitFor()
+  assert.equal(
+    await multipleSourcePage.evaluate(
+      () =>
+        /** @type {typeof globalThis & { __novoraTranslatorSource?: string }} */ (
+          globalThis
+        ).__novoraTranslatorSource,
+    ),
+    "en",
+  )
+  await multipleSourcePage
+    .getByRole("button", { name: "Orijinal açıklamayı göster" })
+    .click()
+  assert.equal(await description.textContent(), originalDescription)
   const backButton = multipleSourcePage.getByRole("button", {
     name: "Aranan serilere dön",
   })
@@ -210,16 +318,28 @@ try {
   await multipleSourcePage
     .getByRole("button", { name: "Korece-1", exact: true })
     .waitFor()
-  await multipleSourcePage
-    .getByRole("button", { name: "İngilizce-1: kaynak açıklaması" })
-    .hover()
-  await multipleSourcePage
-    .getByRole("tooltip")
+  const sourceInfoButton = multipleSourcePage.getByRole("button", {
+    name: "İngilizce-1: kaynak açıklaması",
+  })
+  await sourceInfoButton.hover()
+  const sourceTooltip = multipleSourcePage.getByRole("tooltip")
+  await sourceTooltip
     .getByText(
       "Standart ingilizce kaynak, genelde koreceden çevrilmiş kaliteli seriler bulunur. Çevirimi daha ucuz ve kalitelidir.",
       { exact: true },
     )
     .waitFor()
+  await multipleSourcePage.mouse.move(0, 0)
+  await sourceTooltip.waitFor({ state: "hidden" })
+  await sourceInfoButton.click()
+  await sourceTooltip.waitFor()
+  assert.equal(
+    await multipleSourcePage
+      .getByRole("heading", { name: "Kaynak seç" })
+      .count(),
+    1,
+  )
+  await sourceInfoButton.click()
   assert.equal(
     await multipleSourcePage
       .getByRole("button", { name: /Naver Series|WEBTOON|MangaDex/ })
@@ -263,12 +383,32 @@ try {
     )
     await tower.click()
     assert.equal((await selectionResponse).status(), 200)
-    assert.equal(new URL(page.url()).pathname, "/translate")
+    assert.equal(new URL(page.url()).pathname, "/tr/translate")
+    await page.getByRole("heading", { name: "Kaynak seç" }).waitFor()
+    await page
+      .getByRole("button", { name: "İngilizce-1 kaynağını seç" })
+      .click()
     await page.getByRole("heading", { name: "AI çeviri seçimi" }).waitFor()
     assert.equal(
       await page.getByRole("heading", { name: "Kaynak seç" }).count(),
       0,
     )
+    await page.goBack()
+    await page.getByRole("heading", { name: "Kaynak seç" }).waitFor()
+    await page.goBack()
+    await page.getByRole("heading", { name: "Arama sonuçları" }).waitFor()
+    const repeatSelectionResponse = page.waitForResponse(
+      (candidate) =>
+        candidate.url().endsWith("/api/translation/catalog") &&
+        candidate.request().method() === "POST",
+    )
+    await tower.click()
+    assert.equal((await repeatSelectionResponse).status(), 200)
+    await page.getByRole("heading", { name: "Kaynak seç" }).waitFor()
+    await page
+      .getByRole("button", { name: "İngilizce-1 kaynağını seç" })
+      .click()
+    await page.getByRole("heading", { name: "AI çeviri seçimi" }).waitFor()
     const detailCover = page.getByAltText("Tower of God kapağı")
     await detailCover.evaluate(
       (image) =>
@@ -420,6 +560,65 @@ try {
     await context.close()
   }
 
+  const paidSourceContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  })
+  await paidSourceContext.addInitScript(() => {
+    Reflect.deleteProperty(globalThis, "LanguageDetector")
+    Reflect.deleteProperty(globalThis, "Translator")
+  })
+  const paidSourcePage = await paidSourceContext.newPage()
+  await paidSourcePage.goto(
+    `${baseUrl}/translate?q=${encodeURIComponent("Wizardly Tower")}`,
+    { waitUntil: "networkidle" },
+  )
+  const paidSelectionResponse = paidSourcePage.waitForResponse(
+    (candidate) =>
+      candidate.url().endsWith("/api/translation/catalog") &&
+      candidate.request().method() === "POST",
+  )
+  await paidSourcePage
+    .getByRole("link")
+    .filter({
+      has: paidSourcePage.getByRole("heading", {
+        name: "Wizardly Tower",
+        exact: true,
+      }),
+    })
+    .click()
+  assert.equal((await paidSelectionResponse).status(), 200)
+  await paidSourcePage.getByRole("heading", { name: "Kaynak seç" }).waitFor()
+  const unsupportedTranslationButton = paidSourcePage.getByRole("button", {
+    name: "Seri açıklamasını çevir",
+  })
+  assert.equal(await unsupportedTranslationButton.isDisabled(), true)
+  assert.equal(
+    await unsupportedTranslationButton.locator("..").getAttribute("title"),
+    "Tarayıcınızda çeviri desteği yok",
+  )
+  await paidSourcePage
+    .getByText(
+      "Bu bölüm kaynak üzerinde ücretli ve şuanlık ücretli hesap entegrasyonu sağlanamıyor.",
+      { exact: true },
+    )
+    .waitFor()
+  const paidSourceButton = paidSourcePage.getByRole("button", {
+    name: "Korece-1 kaynağını seç",
+  })
+  assert.equal(await paidSourceButton.isDisabled(), true)
+  await paidSourceButton
+    .locator("..")
+    .getByText("72", { exact: true })
+    .first()
+    .waitFor()
+  assert.equal(
+    await paidSourcePage
+      .getByRole("heading", { name: "AI çeviri seçimi" })
+      .count(),
+    0,
+  )
+  await paidSourceContext.close()
+
   const guestContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
   })
@@ -450,7 +649,11 @@ try {
     })
     .click()
   assert.equal((await guestSelectionResponse).status(), 200)
-  assert.equal(new URL(guestPage.url()).pathname, "/translate")
+  assert.equal(new URL(guestPage.url()).pathname, "/tr/translate")
+  await guestPage.getByRole("heading", { name: "Kaynak seç" }).waitFor()
+  await guestPage
+    .getByRole("button", { name: "İngilizce-1 kaynağını seç" })
+    .click()
   await guestPage.getByRole("heading", { name: "AI çeviri seçimi" }).waitFor()
   await guestPage.getByRole("button", { name: "Tek bölüm" }).click()
   await guestPage.getByRole("button", { name: /Dengeli AI/ }).click()
@@ -516,7 +719,11 @@ try {
       })
       .click()
     assert.equal((await selectionResponse).status(), 200)
-    assert.equal(new URL(page.url()).pathname, "/translate")
+    assert.equal(new URL(page.url()).pathname, "/tr/translate")
+    await page.getByRole("heading", { name: "Kaynak seç" }).waitFor()
+    await page
+      .getByRole("button", { name: "İngilizce-1 kaynağını seç" })
+      .click()
     await page.getByRole("heading", { name: "AI çeviri seçimi" }).waitFor()
     await page.getByRole("button", { name: "Tek bölüm" }).click()
     await page.route("**/api/translation/quote", async (route) => {

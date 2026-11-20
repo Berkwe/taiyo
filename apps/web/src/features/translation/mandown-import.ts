@@ -653,7 +653,7 @@ export async function processMandownTranslationJob(
           backendPlatform: edition.backendPlatform,
           publicDescription: edition.publicDescription,
           publicSourceLabel: edition.publicSourceLabel,
-          sourceUrl: edition.sourceUrl,
+          sourceUrl: download?.sourceUrl ?? edition.sourceUrl,
         },
       })
       if (releaseId) releaseIds.push(releaseId)
@@ -760,7 +760,7 @@ export async function processMandownTranslationJob(
               releaseIds.length > 0
                 ? `${releaseIds.length} eksik bölüm Mandown ile indirilip okuyucuya eklendi.`
                 : "Seçilen bölümler sitede zaten bulunduğu için yeniden eklenmedi.",
-            href: "/translate/serilerim",
+            href: "/tr/translate/serilerim",
             dedupeKey: `translation-job:${job.id}:COMPLETED:${userId}`,
           },
           update: {},

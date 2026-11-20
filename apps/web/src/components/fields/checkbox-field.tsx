@@ -23,11 +23,17 @@ export const CheckboxField = <
 }) => (
   <FormField
     {...props}
-    render={({ field }) => (
+    render={({ field: { onChange, value, ...field } }) => (
       <FormItem className={className}>
         <div className="flex items-center gap-2">
           <FormControl>
-            <Checkbox id={field.name} checked={field.value} {...field} />
+            <Checkbox
+              {...field}
+              aria-label={label}
+              checked={Boolean(value)}
+              id={field.name}
+              onCheckedChange={onChange}
+            />
           </FormControl>
           <Label htmlFor={field.name}>{label}</Label>
         </div>

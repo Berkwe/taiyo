@@ -19,6 +19,9 @@ import {
   useState,
 } from "react"
 import { FollowSeriesButton } from "~/components/platform/follow-series-button"
+import type { Locale } from "~/features/platform/domain"
+import { paths } from "~/features/platform/paths"
+import { createClientIdempotencyKey } from "~/utils/client-idempotency-key"
 
 interface CampaignSummary {
   id: string
@@ -416,7 +419,7 @@ function ContributionDialog({
   )
 }
 
-export function MyTranslations() {
+export function MyTranslations({ locale = "tr" }: { locale?: Locale }) {
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([])
   const [batches, setBatches] = useState<BatchSummary[]>([])
   const [balance, setBalance] = useState(0)
@@ -503,7 +506,7 @@ export function MyTranslations() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
+          "Idempotency-Key": createClientIdempotencyKey(),
         },
         body: JSON.stringify({
           catalogSeriesId: campaign.catalogSeriesId,
@@ -578,7 +581,7 @@ export function MyTranslations() {
         </p>
         <Link
           className="mt-5 inline-flex min-h-11 items-center bg-nv-primary px-5 font-semibold text-nv-primary-foreground"
-          href="/translate"
+          href={paths.translate(locale)}
         >
           Seri seç
         </Link>

@@ -35,6 +35,7 @@ export interface PublicSourceEdition {
   sourceLanguageLabel: string
   provider: CatalogSourceProvider
   providerLabel: string
+  accessStatus: "available" | "paid-account-required"
   description: string
   chapterCount: number
   lastChapterNumber: string
@@ -42,6 +43,33 @@ export interface PublicSourceEdition {
   priority: number
   chaptersLoaded: boolean
   chapters: CatalogChapter[]
+}
+
+type SourceAccessPriority = Pick<
+  PublicSourceEdition,
+  "accessStatus" | "priority"
+>
+
+export function orderSourceEditionsByAccess<T extends SourceAccessPriority>(
+  editions: readonly T[],
+) {
+  return [...editions].sort((left, right) => {
+    const access =
+      Number(left.accessStatus === "paid-account-required") -
+      Number(right.accessStatus === "paid-account-required")
+    return access || right.priority - left.priority
+  })
+}
+
+export function sourceEditionHydrationTiers<
+  T extends Pick<PublicSourceEdition, "accessStatus">,
+>(editions: readonly T[]) {
+  return [
+    editions.filter((edition) => edition.accessStatus === "available"),
+    editions.filter(
+      (edition) => edition.accessStatus === "paid-account-required",
+    ),
+  ] as const
 }
 
 export interface AniListCatalogSearchItem {
@@ -72,7 +100,10 @@ export interface PublicCatalogSeries {
 }
 
 export interface SourceCatalogProvider {
-  searchSeries(query: string): Promise<AniListCatalogSearchItem[]>
+  searchSeries(
+    query: string,
+    options?: { includeAdult?: boolean; onlyWithSources?: boolean },
+  ): Promise<AniListCatalogSearchItem[]>
   selectSeries(selectionToken: string): Promise<PublicCatalogSeries>
   getSeriesDetails(catalogSeriesId: string): Promise<PublicCatalogSeries | null>
   getSourceEditionDetails(

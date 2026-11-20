@@ -27,6 +27,7 @@ export function SourceInfoPopover({
   const root = useRef<HTMLSpanElement>(null)
   const tooltip = useRef<HTMLSpanElement>(null)
   const pointerFocus = useRef(false)
+  const openedByHover = useRef(false)
   const [mounted, setMounted] = useState(false)
   const [position, setPosition] = useState({ left: 0, top: 0 })
 
@@ -34,8 +35,13 @@ export function SourceInfoPopover({
     setMounted(true)
     const closeOutside = (event: PointerEvent) => {
       const target = event.target as Node
-      if (!root.current?.contains(target) && !tooltip.current?.contains(target))
+      if (
+        !root.current?.contains(target) &&
+        !tooltip.current?.contains(target)
+      ) {
+        openedByHover.current = false
         setOpen(false)
+      }
     }
     document.addEventListener("pointerdown", closeOutside)
     return () => document.removeEventListener("pointerdown", closeOutside)
@@ -83,9 +89,17 @@ export function SourceInfoPopover({
         aria-expanded={open}
         aria-label={ariaLabel ?? `${label}: kaynak açıklaması`}
         className="inline-flex size-8 items-center justify-center rounded-full border border-nv-border bg-surface-raised text-foreground hover:border-nv-primary focus-visible:outline-2 focus-visible:outline-ring"
-        onBlur={() => setOpen(false)}
+        onBlur={() => {
+          openedByHover.current = false
+          setOpen(false)
+        }}
         onClick={() => {
-          setOpen((value) => !value)
+          if (pointerFocus.current) {
+            setOpen(true)
+          } else {
+            setOpen((value) => !value)
+          }
+          openedByHover.current = false
           pointerFocus.current = false
         }}
         onFocus={(event) => {
@@ -102,10 +116,16 @@ export function SourceInfoPopover({
           pointerFocus.current = true
         }}
         onPointerEnter={(event) => {
-          if (event.pointerType === "mouse") setOpen(true)
+          if (event.pointerType === "mouse" && !open) {
+            openedByHover.current = true
+            setOpen(true)
+          }
         }}
         onPointerLeave={(event) => {
-          if (event.pointerType === "mouse") setOpen(false)
+          if (event.pointerType === "mouse" && openedByHover.current) {
+            openedByHover.current = false
+            setOpen(false)
+          }
         }}
         type="button"
       >

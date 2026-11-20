@@ -80,6 +80,33 @@
       "description1": "Doğrulama bağlantısı için gelen kutunu kontrol et.",
       "description2": "E-posta şimdi gönderildi veya son bir saat içinde zaten gönderilmişti. Ulaşmadıysa bir süre bekleyip tekrar dene."
     },
+    "verificationResult": {
+      "success": {
+        "title": "E-posta adresin doğrulandı",
+        "description": "Hesabın kullanıma hazır. Artık NovoraScans'a giriş yapmış durumdasın.",
+        "redirect": "{seconds} saniye içinde ana sayfaya yönlendiriliyorsun."
+      },
+      "errors": {
+        "expired": {
+          "title": "Doğrulama bağlantısının süresi dolmuş",
+          "description": "Bu bağlantı artık kullanılamıyor. Giriş sayfasından hesabınla giriş yaparak yeni bir doğrulama e-postası isteyebilirsin."
+        },
+        "invalid": {
+          "title": "Doğrulama bağlantısı geçersiz",
+          "description": "Bağlantı eksik, değiştirilmiş veya daha önce kullanılmış olabilir. Giriş sayfasından yeni bir doğrulama e-postası iste."
+        },
+        "notFound": {
+          "title": "Doğrulanacak hesap bulunamadı",
+          "description": "Bu bağlantıyla eşleşen bir hesap bulunamadı. E-posta adresini kontrol ederek yeniden kayıt olabilirsin."
+        },
+        "unknown": {
+          "title": "E-posta doğrulanamadı",
+          "description": "Beklenmeyen bir doğrulama hatası oluştu. Giriş sayfasından yeni bir doğrulama e-postası istemeyi dene."
+        }
+      },
+      "home": "Ana sayfaya dön",
+      "signIn": "Giriş sayfasına dön"
+    },
     "resetPasswordEmailSent": {
       "title": "Parola yenileme e-postası gönderildi",
       "description1": "Parola yenileme bağlantısı için gelen kutunu kontrol et.",

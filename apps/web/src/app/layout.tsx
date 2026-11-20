@@ -19,8 +19,24 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   applicationName: siteConfig.name,
   icons: {
-    icon: "/assets/brand/novora-favicon.png",
-    apple: "/assets/brand/novora-favicon.png",
+    icon: [
+      {
+        url: "/assets/brand/novora-favicon-32.png",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/assets/brand/novora-favicon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+    ],
+    shortcut: "/assets/brand/novora-favicon-32.png",
+    apple: {
+      url: "/assets/brand/novora-apple-touch-icon.png",
+      sizes: "180x180",
+      type: "image/png",
+    },
   },
   openGraph: {
     siteName: siteConfig.name,

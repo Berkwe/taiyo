@@ -20,6 +20,13 @@ export const env = createEnv({
     SOURCE_CATALOG_PROVIDER: z.enum(["mandown"]).default("mandown"),
     MANDOWN_PYTHON: z.string().min(1).optional(),
     MANDOWN_DOWNLOAD_ROOT: z.string().min(1).default("storage/mandown"),
+    MANDOWN_JEV_CACHE: z.string().min(1).default("storage/mandown/jev.sqlite3"),
+    MANDOWN_JEV_CACHE_REVISION: z.string().min(1).default("1"),
+    MANDOWN_SEARCH_LOG: z
+      .string()
+      .min(1)
+      .default("storage/mandown/search.jsonl"),
+    JEVMODEL_API_KEY: z.string().optional(),
     TRANSLATION_BALANCED_CREDITS: z.coerce
       .number()
       .int()

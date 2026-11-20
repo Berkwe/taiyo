@@ -6,6 +6,8 @@ import { z } from "zod"
 import { AppHeader } from "~/components/platform/app-header"
 import { Footer } from "~/components/platform/footer"
 import { getDebugViewerRole } from "~/features/debug/viewer"
+import type { Locale } from "~/features/platform/domain"
+import { paths } from "~/features/platform/paths"
 import { getSourceCatalogProvider } from "~/features/translation/provider"
 import { resolveOutputLanguage } from "~/features/translation/types"
 import { getSession } from "~/utils/get-session"
@@ -17,10 +19,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 }
 
-export default async function TranslationSeriesPage({
+export async function TranslationSeriesPageContent({
+  locale,
   params,
   searchParams,
 }: {
+  locale: Locale
   params: Promise<{ seriesId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
@@ -94,45 +98,54 @@ export default async function TranslationSeriesPage({
   )
 
   return (
+    <main className="py-10 content-shell" id="main-content">
+      {session?.user ? (
+        <Link
+          className="mb-6 inline-flex min-h-11 items-center border border-nv-border bg-surface px-4 font-semibold hover:bg-surface-raised"
+          href={paths.translateRequests(locale)}
+        >
+          {locale === "tr" ? "Çeviri Taleplerim" : "My Translation Requests"}
+        </Link>
+      ) : null}
+      <TranslateExperience
+        authenticated={authenticated}
+        balance={balance}
+        detailMode
+        initialQuery={series.title}
+        initialQuality={
+          query.quality === "premium" || query.quality === "balanced"
+            ? query.quality
+            : undefined
+        }
+        initialOutputLanguage={resolveOutputLanguage(
+          typeof query.outputLanguage === "string"
+            ? query.outputLanguage
+            : session?.user.settings.translationLanguage,
+        )}
+        initialResults={[series]}
+        initialSelectionMode={
+          query.selectionMode === "range" ? "range" : undefined
+        }
+        initialSeriesId={series.id}
+        locale={locale}
+        nextChapter={
+          typeof query.nextChapter === "string"
+            ? query.nextChapter
+            : continuationChapter?.number
+        }
+        preferredSourceEditionId={requestedSourceEditionId}
+      />
+    </main>
+  )
+}
+
+export default async function TranslationSeriesPage(
+  props: Omit<Parameters<typeof TranslationSeriesPageContent>[0], "locale">,
+) {
+  return (
     <>
       <AppHeader locale="tr" />
-      <main className="py-10 content-shell" id="main-content">
-        {session?.user ? (
-          <Link
-            className="mb-6 inline-flex min-h-11 items-center border border-nv-border bg-surface px-4 font-semibold hover:bg-surface-raised"
-            href="/translate/serilerim"
-          >
-            Çeviri Taleplerim
-          </Link>
-        ) : null}
-        <TranslateExperience
-          authenticated={authenticated}
-          balance={balance}
-          detailMode
-          initialQuery={series.title}
-          initialQuality={
-            query.quality === "premium" || query.quality === "balanced"
-              ? query.quality
-              : undefined
-          }
-          initialOutputLanguage={resolveOutputLanguage(
-            typeof query.outputLanguage === "string"
-              ? query.outputLanguage
-              : session?.user.settings.translationLanguage,
-          )}
-          initialResults={[series]}
-          initialSelectionMode={
-            query.selectionMode === "range" ? "range" : undefined
-          }
-          initialSeriesId={series.id}
-          nextChapter={
-            typeof query.nextChapter === "string"
-              ? query.nextChapter
-              : continuationChapter?.number
-          }
-          preferredSourceEditionId={requestedSourceEditionId}
-        />
-      </main>
+      <TranslationSeriesPageContent {...props} locale="tr" />
       <Footer locale="tr" />
     </>
   )

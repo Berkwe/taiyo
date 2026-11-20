@@ -10,6 +10,14 @@ try {
     waitUntil: "domcontentloaded",
   })
 
+  const rememberMe = page.getByRole("checkbox", { name: "Beni hatırla" })
+  const rememberMeLabel = page.getByText("Beni hatırla", { exact: true })
+  assert.equal(await rememberMe.isChecked(), true)
+  await rememberMeLabel.click()
+  assert.equal(await rememberMe.isChecked(), false)
+  await rememberMeLabel.click()
+  assert.equal(await rememberMe.isChecked(), true)
+
   const email = page.locator('input[name="email"]')
   const password = page.locator('input[name="password"]')
   await email.fill("reader@gmail.com")

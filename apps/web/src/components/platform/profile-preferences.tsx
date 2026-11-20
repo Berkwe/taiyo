@@ -1,9 +1,17 @@
 "use client"
 
-import { Languages, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
+import {
+  Languages,
+  Monitor,
+  Moon,
+  Palette,
+  ShieldAlert,
+  Sun,
+  UserRound,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { setLocale } from "~/actions/set-locale"
 import type { Locale } from "~/features/platform/domain"
 import { paths } from "~/features/platform/paths"
@@ -14,6 +22,7 @@ import {
   saveReaderShortcuts,
   shortcutLabel,
 } from "~/features/platform/reader-shortcuts"
+import { siteConfig } from "~/site-config"
 
 const themes = [
   { value: "system", icon: Monitor },
@@ -21,21 +30,31 @@ const themes = [
   { value: "dark", icon: Moon },
 ] as const
 
+const subscribeToHydration = () => () => {}
+const getClientHydrationSnapshot = () => true
+const getServerHydrationSnapshot = () => false
+
 export function ProfilePreferences({
   authenticated,
   canPersist,
+  initialShowAdultAniListResults,
   initialTranslationLanguage,
   locale,
 }: {
   authenticated: boolean
   canPersist: boolean
+  initialShowAdultAniListResults: boolean
   initialTranslationLanguage: "tr"
   locale: Locale
 }) {
   const tr = locale === "tr"
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  )
   const [shortcuts, setShortcuts] = useState<ReaderShortcuts>(
     defaultReaderShortcuts,
   )
@@ -45,9 +64,12 @@ export function ProfilePreferences({
     initialTranslationLanguage,
   )
   const [translationLanguageStatus, setTranslationLanguageStatus] = useState("")
+  const [showAdultAniListResults, setShowAdultAniListResults] = useState(
+    initialShowAdultAniListResults,
+  )
+  const [adultContentStatus, setAdultContentStatus] = useState("")
 
   useEffect(() => {
-    setMounted(true)
     setShortcuts(readReaderShortcuts())
     if (localStorage.getItem("novora:translation-language") === "tr")
       setTranslationLanguage("tr")
@@ -81,6 +103,59 @@ export function ProfilePreferences({
           : tr
             ? "Çeviri dili kaydedilemedi."
             : "Translation language could not be saved.",
+      )
+    }
+  }
+
+  const saveAdultSettingCookie = (enabled: boolean) => {
+    const cookieName = `${siteConfig.settings.cookie.name}=`
+    const currentValue = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(cookieName))
+      ?.slice(cookieName.length)
+    let current: PrismaJson.UserSettings = {}
+    if (currentValue) {
+      try {
+        current = JSON.parse(currentValue) as PrismaJson.UserSettings
+      } catch {
+        current = {}
+      }
+    }
+    document.cookie = `${cookieName}${JSON.stringify({
+      ...current,
+      showAdultAniListResults: enabled,
+    })}; path=/; max-age=${siteConfig.settings.cookie.maxAge}; samesite=lax`
+  }
+
+  const changeAdultContentVisibility = async (enabled: boolean) => {
+    const previous = showAdultAniListResults
+    setShowAdultAniListResults(enabled)
+    saveAdultSettingCookie(enabled)
+    setAdultContentStatus("")
+    try {
+      if (canPersist) {
+        const response = await fetch("/api/profile/adult-content", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        })
+        if (!response.ok)
+          throw new Error("Yetişkin içerik ayarı kaydedilemedi.")
+      }
+      setAdultContentStatus(
+        tr
+          ? "Yetişkin içerik ayarı kaydedildi."
+          : "Adult content setting saved.",
+      )
+    } catch (error) {
+      setShowAdultAniListResults(previous)
+      saveAdultSettingCookie(previous)
+      setAdultContentStatus(
+        error instanceof Error
+          ? error.message
+          : tr
+            ? "Yetişkin içerik ayarı kaydedilemedi."
+            : "Adult content setting could not be saved.",
       )
     }
   }
@@ -157,6 +232,47 @@ export function ProfilePreferences({
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="border border-nv-border bg-surface p-5">
+        <h2 className="flex items-center gap-2 font-bold text-xl">
+          <ShieldAlert aria-hidden="true" size={21} />
+          {tr ? "Yetişkin içerik" : "Adult content"}
+        </h2>
+        <p className="mt-2 text-nv-muted-foreground text-sm">
+          {tr
+            ? "Etkinleştirildiğinde yalnızca AniList tarafından 18+ olarak işaretlenen seriler AI çeviri aramasında gösterilebilir."
+            : "When enabled, series explicitly marked as 18+ by AniList can appear in AI translation search."}
+        </p>
+        <button
+          aria-checked={showAdultAniListResults}
+          aria-label={
+            tr
+              ? "Yetişkin AniList sonuçlarını göster"
+              : "Show adult AniList results"
+          }
+          className="group mt-4 inline-flex min-h-11 items-center gap-3 rounded-md border border-nv-border px-4 font-semibold aria-checked:bg-nv-primary aria-checked:text-nv-primary-foreground"
+          onClick={() =>
+            void changeAdultContentVisibility(!showAdultAniListResults)
+          }
+          role="switch"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+            className="relative h-5 w-9 rounded-full bg-surface-raised ring-1 ring-nv-border after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-nv-foreground after:transition-transform group-aria-checked:after:translate-x-4"
+          />
+          {showAdultAniListResults
+            ? tr
+              ? "Açık"
+              : "On"
+            : tr
+              ? "Kapalı"
+              : "Off"}
+        </button>
+        <p aria-live="polite" className="mt-3 text-nv-muted-foreground text-sm">
+          {adultContentStatus}
+        </p>
       </section>
 
       <section className="border border-nv-border bg-surface p-5">

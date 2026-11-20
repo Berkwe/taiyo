@@ -219,7 +219,7 @@ function mapSeries(series: PublicDbSeries): Series {
     }),
     cover: series.coverStorageKey
       ? storageUrl(series.coverStorageKey)
-      : "/assets/brand/novora-brand-mark.svg",
+      : "/assets/brand/novora-stacked-logo.png",
     ...(series.bannerStorageKey
       ? { banner: storageUrl(series.bannerStorageKey) }
       : {}),
@@ -364,7 +364,7 @@ export async function getPublicSeriesSearchItems({
       genre,
       cover: series.coverStorageKey
         ? storageUrl(series.coverStorageKey)
-        : "/assets/brand/novora-brand-mark.svg",
+        : "/assets/brand/novora-stacked-logo.png",
       searchable: [
         ...series.localizations.map((item) => item.title),
         ...series.aliases.map((item) => item.alias),

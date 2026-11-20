@@ -34,7 +34,7 @@ async function translationRequestHrefs({
   const fallbackNextChapter = Number.isFinite(numericChapter)
     ? String(numericChapter + 1)
     : chapterNumber
-  const fallbackBase = `/translate?q=${encodeURIComponent(
+  const fallbackBase = `${paths.translate(locale)}?q=${encodeURIComponent(
     seriesTitle,
   )}&seriesId=${encodeURIComponent(seriesId)}&fromReader=1&outputLanguage=${locale}&quality=${qualityTier}`
   const fallback = {
@@ -96,7 +96,7 @@ async function translationRequestHrefs({
   if (!edition) {
     return {
       ...fallback,
-      sourceSearch: `/translate/${catalog.id}?nextChapter=${encodeURIComponent(
+      sourceSearch: `${paths.translateSeries(locale, catalog.id)}?nextChapter=${encodeURIComponent(
         chapterNumber,
       )}&selectionMode=single&chooseSource=1&fromReader=1`,
     }
@@ -109,7 +109,7 @@ async function translationRequestHrefs({
       (item) => current && item.sortKey > current.sortKey,
     ) ?? current
   if (!current || !requested) return fallback
-  const exactBase = `/translate/${catalog.id}?sourceEditionId=${edition.id}&outputLanguage=${locale}&quality=${qualityTier}`
+  const exactBase = `${paths.translateSeries(locale, catalog.id)}?sourceEditionId=${edition.id}&outputLanguage=${locale}&quality=${qualityTier}`
   return {
     continuation: `${exactBase}&nextChapter=${encodeURIComponent(
       requested.chapterNumber,
@@ -117,7 +117,7 @@ async function translationRequestHrefs({
     currentSource: `${exactBase}&nextChapter=${encodeURIComponent(
       current.chapterNumber,
     )}&selectionMode=single&fromReader=1`,
-    sourceSearch: `/translate/${catalog.id}?nextChapter=${encodeURIComponent(
+    sourceSearch: `${paths.translateSeries(locale, catalog.id)}?nextChapter=${encodeURIComponent(
       current.chapterNumber,
     )}&selectionMode=single&chooseSource=1&fromReader=1`,
   }

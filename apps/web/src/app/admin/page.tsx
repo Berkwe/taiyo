@@ -16,6 +16,7 @@ import {
   publishRelease,
   refundTranslationCampaign,
   updateAccountState,
+  updateCatalogSourceVisibility,
   updateChapter,
   updateChapterSource,
   updateMockTranslationJob,
@@ -152,6 +153,7 @@ export default async function AdminPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    catalog?: string
     report?: string
     reportStatus?: string
     user?: string
@@ -160,6 +162,7 @@ export default async function AdminPage({
   const actor = await requireManagementUser("series:write")
   const query = await searchParams
   const userQuery = query.user?.trim().slice(0, 100) ?? ""
+  const catalogQuery = query.catalog?.trim().slice(0, 160) ?? ""
   const reportQuery = query.report?.trim().slice(0, 100) ?? ""
   const reportStatus = ["OPEN", "REVIEWING", "RESOLVED", "REJECTED"].includes(
     query.reportStatus ?? "",
@@ -360,6 +363,44 @@ export default async function AdminPage({
             select: { id: true, credits: true, status: true, userId: true },
           },
           job: true,
+        },
+      })
+    : []
+  const catalogSources = canPublish
+    ? await db.catalogSeries.findMany({
+        where: {
+          isActive: true,
+          ...(catalogQuery
+            ? { title: { contains: catalogQuery, mode: "insensitive" } }
+            : {}),
+          editions: { some: { isActive: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          title: true,
+          editions: {
+            where: { isActive: true },
+            orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+            select: {
+              id: true,
+              backendPlatform: true,
+              sourceLanguage: true,
+              publicSourceLabel: true,
+              isPublic: true,
+              chapters: {
+                where: { isAvailable: true },
+                orderBy: { sortKey: "asc" },
+                select: {
+                  id: true,
+                  chapterNumber: true,
+                  title: true,
+                  isPublic: true,
+                },
+              },
+            },
+          },
         },
       })
     : []
@@ -850,37 +891,155 @@ export default async function AdminPage({
       ) : null}
 
       {canPublish ? (
-        <section className="mb-10" id="bulk-releases">
-          <h2 className="mb-4 font-bold text-2xl">Toplu sürüm işlemi</h2>
-          <form
-            action={bulkReleaseAction}
-            className="grid gap-3 border border-nv-border bg-surface p-4 sm:grid-cols-[1fr_auto_auto]"
-          >
-            <label className="grid gap-1 text-sm">
-              Sürüm UUID’leri (virgül veya boşlukla ayırın)
-              <textarea
-                className="min-h-24 border border-nv-border bg-background p-3"
-                name="ids"
-                required
+        <>
+          <section className="mb-10" id="catalog-source-visibility">
+            <h2 className="font-bold text-2xl">
+              AI çeviri katalog görünürlüğü
+            </h2>
+            <p className="mt-1 text-nv-muted-foreground text-sm">
+              Kullanıcıların görebileceği kaynakları ve o kaynaklarda
+              seçebileceği bölümleri belirleyin. Kaynak yenilemeleri bu manuel
+              seçimleri değiştirmez.
+            </p>
+            <form
+              action="/admin"
+              className="mt-4 flex max-w-2xl flex-wrap gap-2"
+              method="get"
+            >
+              <input
+                aria-label="AI çeviri kataloğunda seri ara"
+                className={`${inputClass} min-w-64 flex-1`}
+                defaultValue={catalogQuery}
+                name="catalog"
+                placeholder="Katalog serisi ara…"
+                type="search"
               />
-            </label>
-            <label className="grid content-start gap-1 text-sm">
-              İşlem
-              <select className={inputClass} name="action">
-                <option value="PUBLISH">Yayınla</option>
-                <option value="DRAFT">Taslağa al</option>
-                <option value="ARCHIVE">Arşivle</option>
-              </select>
-            </label>
-            <button className={`${primaryButton} self-end`} type="submit">
-              Onayla ve uygula
-            </button>
-          </form>
-          <p className="mt-2 text-nv-muted-foreground text-sm">
-            Yayınlamadan önce tüm sürümler doğrulanır. Bir kayıt başarısızsa
-            transaction bütünüyle geri alınır.
-          </p>
-        </section>
+              <button className={secondaryButton} type="submit">
+                Katalogda ara
+              </button>
+            </form>
+            <div className="mt-4 grid gap-3">
+              {catalogSources.map((catalogSeries) => (
+                <details
+                  className="border border-nv-border bg-surface p-4"
+                  key={catalogSeries.id}
+                >
+                  <summary className="cursor-pointer font-semibold">
+                    {catalogSeries.title} · {catalogSeries.editions.length}{" "}
+                    kaynak
+                  </summary>
+                  <div className="mt-4 grid gap-4">
+                    {catalogSeries.editions.map((edition) => (
+                      <form
+                        action={updateCatalogSourceVisibility}
+                        className="grid gap-4 border border-nv-border bg-background p-4"
+                        key={edition.id}
+                      >
+                        <input
+                          name="sourceEditionId"
+                          type="hidden"
+                          value={edition.id}
+                        />
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold">
+                              {edition.publicSourceLabel}
+                            </h3>
+                            <p className="text-nv-muted-foreground text-sm">
+                              {edition.sourceLanguage} ·{" "}
+                              {edition.backendPlatform} ·{" "}
+                              {edition.chapters.length} erişilebilir bölüm
+                            </p>
+                          </div>
+                          <label className="inline-flex min-h-11 items-center gap-2 border border-nv-border px-3 font-semibold text-sm">
+                            <input
+                              defaultChecked={edition.isPublic}
+                              name="editionIsPublic"
+                              type="checkbox"
+                            />
+                            Kaynağı kullanıcılara göster
+                          </label>
+                        </div>
+                        <fieldset>
+                          <legend className="font-semibold text-sm">
+                            Gösterilecek bölümler
+                          </legend>
+                          <div className="mt-2 grid max-h-72 gap-2 overflow-y-auto border border-nv-border p-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {edition.chapters.map((chapter) => (
+                              <label
+                                className="flex min-h-10 items-center gap-2 border border-nv-border px-3 text-sm"
+                                key={chapter.id}
+                              >
+                                <input
+                                  defaultChecked={chapter.isPublic}
+                                  name="visibleChapterIds"
+                                  type="checkbox"
+                                  value={chapter.id}
+                                />
+                                <span>
+                                  Bölüm {chapter.chapterNumber}
+                                  {chapter.title ? ` · ${chapter.title}` : ""}
+                                </span>
+                              </label>
+                            ))}
+                            {edition.chapters.length === 0 ? (
+                              <p className="text-nv-muted-foreground text-sm">
+                                Bu kaynak için henüz bölüm yüklenmedi.
+                              </p>
+                            ) : null}
+                          </div>
+                        </fieldset>
+                        <button
+                          className={`${primaryButton} justify-self-start`}
+                          type="submit"
+                        >
+                          Katalog görünürlüğünü kaydet
+                        </button>
+                      </form>
+                    ))}
+                  </div>
+                </details>
+              ))}
+              {catalogSources.length === 0 ? (
+                <p className="text-nv-muted-foreground">
+                  Yönetilecek AI çeviri katalog kaynağı bulunamadı.
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="mb-10" id="bulk-releases">
+            <h2 className="mb-4 font-bold text-2xl">Toplu sürüm işlemi</h2>
+            <form
+              action={bulkReleaseAction}
+              className="grid gap-3 border border-nv-border bg-surface p-4 sm:grid-cols-[1fr_auto_auto]"
+            >
+              <label className="grid gap-1 text-sm">
+                Sürüm UUID’leri (virgül veya boşlukla ayırın)
+                <textarea
+                  className="min-h-24 border border-nv-border bg-background p-3"
+                  name="ids"
+                  required
+                />
+              </label>
+              <label className="grid content-start gap-1 text-sm">
+                İşlem
+                <select className={inputClass} name="action">
+                  <option value="PUBLISH">Yayınla</option>
+                  <option value="DRAFT">Taslağa al</option>
+                  <option value="ARCHIVE">Arşivle</option>
+                </select>
+              </label>
+              <button className={`${primaryButton} self-end`} type="submit">
+                Onayla ve uygula
+              </button>
+            </form>
+            <p className="mt-2 text-nv-muted-foreground text-sm">
+              Yayınlamadan önce tüm sürümler doğrulanır. Bir kayıt başarısızsa
+              transaction bütünüyle geri alınır.
+            </p>
+          </section>
+        </>
       ) : null}
 
       <section className="mb-10">

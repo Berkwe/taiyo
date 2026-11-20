@@ -70,7 +70,7 @@ export default async function HomePage({
             "@type": "Organization",
             name: siteConfig.name,
             url: absoluteUrl(paths.home(locale)),
-            logo: absoluteUrl("/assets/brand/novora-brand-mark.svg"),
+            logo: absoluteUrl("/assets/brand/novora-stacked-logo.png"),
           },
           {
             "@context": "https://schema.org",

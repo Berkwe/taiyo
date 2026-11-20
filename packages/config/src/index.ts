@@ -8,6 +8,7 @@ export const config = {
     showLibrary: true,
     homeLayout: "ROWS",
     translationLanguage: "tr",
+    showAdultAniListResults: false,
   } satisfies Required<PrismaJson.UserSettings>,
   files: {
     allowedExtensions: ["jpg", "jpeg", "png", "webp", "gif"],

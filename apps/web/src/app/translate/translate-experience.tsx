@@ -15,6 +15,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { SourceInfoPopover } from "~/components/platform/source-info-popover"
+import type { Locale } from "~/features/platform/domain"
+import { paths } from "~/features/platform/paths"
 import { compactChapterNumbers } from "~/features/translation/campaign-accounting"
 import type {
   AniListCatalogSearchItem,
@@ -26,7 +28,13 @@ import type {
   TranslationQuality,
   TranslationRequestConflict,
 } from "~/features/translation/types"
-import { outputLanguages } from "~/features/translation/types"
+import {
+  orderSourceEditionsByAccess,
+  outputLanguages,
+  sourceEditionHydrationTiers,
+} from "~/features/translation/types"
+import { createClientIdempotencyKey } from "~/utils/client-idempotency-key"
+import { SeriesDescriptionTranslator } from "./series-description-translator"
 
 const formatCredits = new Intl.NumberFormat("tr-TR")
 const searchStatusLabels: Record<string, string> = {
@@ -93,6 +101,34 @@ class SourceUnavailableError extends Error {
   }
 }
 
+type TranslateHistoryView = "search" | "source" | "chapters"
+
+function translateHistoryView(state: unknown): TranslateHistoryView | null {
+  if (!state || typeof state !== "object" || !("novoraTranslate" in state))
+    return null
+  const value = (state as { novoraTranslate?: { view?: unknown } })
+    .novoraTranslate?.view
+  return value === "search" || value === "source" || value === "chapters"
+    ? value
+    : null
+}
+
+function writeTranslateHistory(
+  mode: "push" | "replace",
+  view: TranslateHistoryView,
+  url?: string,
+) {
+  const state =
+    window.history.state && typeof window.history.state === "object"
+      ? window.history.state
+      : {}
+  window.history[mode === "push" ? "pushState" : "replaceState"](
+    { ...state, novoraTranslate: { view } },
+    "",
+    url ?? window.location.href,
+  )
+}
+
 export function TranslateExperience({
   authenticated,
   balance,
@@ -102,6 +138,8 @@ export function TranslateExperience({
   initialResults,
   initialSelectionMode,
   initialSeriesId,
+  locale = "tr",
+  showAdultAniListResults = false,
   nextChapter,
   preferredSourceEditionId,
   requireSourceChoice = false,
@@ -115,13 +153,18 @@ export function TranslateExperience({
   initialResults: PublicCatalogSeries[]
   initialSelectionMode?: "single" | "range"
   initialSeriesId?: string
+  locale?: Locale
+  showAdultAniListResults?: boolean
   nextChapter?: string
   preferredSourceEditionId?: string
   requireSourceChoice?: boolean
   detailMode?: boolean
 }) {
   const router = useRouter()
+  const translatePath = paths.translate(locale)
+  const translationRequestsPath = paths.translateRequests(locale)
   const [query, setQuery] = useState(initialQuery)
+  const [onlyWithSources, setOnlyWithSources] = useState(false)
   const [series, setSeries] = useState<PublicCatalogSeries | null>(
     (initialSeriesId
       ? initialResults.find(
@@ -208,62 +251,105 @@ export function TranslateExperience({
   )
   const qualityStepRef = useRef<HTMLDivElement>(null)
   const languageStepRef = useRef<HTMLDivElement>(null)
+  const seriesHistoryRef = useRef(series)
+  const editionHistoryRef = useRef(edition)
 
   useEffect(() => {
     setQuery(initialQuery)
   }, [initialQuery])
 
-  const runSearch = useCallback(async (value: string) => {
-    const normalized = value.trim()
-    searchController.current?.abort()
-    const sequence = ++searchSequence.current
-    if (!normalized) {
-      setSearchResults([])
+  useEffect(() => {
+    if (series) seriesHistoryRef.current = series
+  }, [series])
+
+  useEffect(() => {
+    if (edition) editionHistoryRef.current = edition
+  }, [edition])
+
+  useEffect(() => {
+    writeTranslateHistory(
+      "replace",
+      seriesHistoryRef.current ? "source" : "search",
+    )
+    const handlePopState = (event: PopStateEvent) => {
+      const view = translateHistoryView(event.state)
+      if (!view) return
+      setActionMessage("")
+      if (view === "search") {
+        setSeries(null)
+        setEdition(null)
+        setSelectedChapters([])
+        setStep("source")
+        return
+      }
+      const rememberedSeries = seriesHistoryRef.current
+      if (rememberedSeries) setSeries(rememberedSeries)
+      if (view === "source") {
+        setStep("source")
+        return
+      }
+      const rememberedEdition = editionHistoryRef.current
+      if (rememberedEdition) setEdition(rememberedEdition)
+      setStep("chapters")
+    }
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [])
+
+  const runSearch = useCallback(
+    async (value: string) => {
+      const normalized = value.trim()
+      searchController.current?.abort()
+      const sequence = ++searchSequence.current
+      if (!normalized) {
+        setSearchResults([])
+        setSearchComplete(false)
+        setSearchError("")
+        setSearchRetryAfter(null)
+        setSearching(false)
+        return
+      }
+      const controller = new AbortController()
+      searchController.current = controller
+      setSearching(true)
       setSearchComplete(false)
       setSearchError("")
       setSearchRetryAfter(null)
-      setSearching(false)
-      return
-    }
-    const controller = new AbortController()
-    searchController.current = controller
-    setSearching(true)
-    setSearchComplete(false)
-    setSearchError("")
-    setSearchRetryAfter(null)
-    try {
-      const response = await fetch(
-        `/api/translation/catalog?q=${encodeURIComponent(normalized)}`,
-        { signal: controller.signal },
-      )
-      const body = (await response.json()) as {
-        results?: AniListCatalogSearchItem[]
-        error?: string
-        retryAfter?: number
-      }
-      if (!response.ok) {
-        const retryAfter = Number(
-          body.retryAfter ?? response.headers.get("Retry-After"),
+      try {
+        const response = await fetch(
+          `/api/translation/catalog?q=${encodeURIComponent(normalized)}&includeAdult=${showAdultAniListResults ? "1" : "0"}&onlyWithSources=${onlyWithSources ? "1" : "0"}`,
+          { signal: controller.signal },
         )
-        if (response.status === 429 && Number.isFinite(retryAfter))
-          setSearchRetryAfter(retryAfter)
-        throw new Error(body.error ?? "Arama tamamlanamadı.")
+        const body = (await response.json()) as {
+          results?: AniListCatalogSearchItem[]
+          error?: string
+          retryAfter?: number
+        }
+        if (!response.ok) {
+          const retryAfter = Number(
+            body.retryAfter ?? response.headers.get("Retry-After"),
+          )
+          if (response.status === 429 && Number.isFinite(retryAfter))
+            setSearchRetryAfter(retryAfter)
+          throw new Error(body.error ?? "Arama tamamlanamadı.")
+        }
+        if (sequence !== searchSequence.current) return
+        setSearchResults(body.results ?? [])
+        setSearchComplete(true)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return
+        if (sequence !== searchSequence.current) return
+        setSearchResults([])
+        setSearchComplete(true)
+        setSearchError(
+          error instanceof Error ? error.message : "Arama tamamlanamadı.",
+        )
+      } finally {
+        if (sequence === searchSequence.current) setSearching(false)
       }
-      if (sequence !== searchSequence.current) return
-      setSearchResults(body.results ?? [])
-      setSearchComplete(true)
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return
-      if (sequence !== searchSequence.current) return
-      setSearchResults([])
-      setSearchComplete(true)
-      setSearchError(
-        error instanceof Error ? error.message : "Arama tamamlanamadı.",
-      )
-    } finally {
-      if (sequence === searchSequence.current) setSearching(false)
-    }
-  }, [])
+    },
+    [onlyWithSources, showAdultAniListResults],
+  )
 
   useEffect(() => {
     if (detailMode) return
@@ -324,7 +410,14 @@ export function TranslateExperience({
         setStep("source")
         setActionMessage("")
         setSelectingAnilistId(null)
-        window.history.replaceState(null, "", "/translate")
+        seriesHistoryRef.current = body.series
+        writeTranslateHistory(
+          "push",
+          "source",
+          query.trim()
+            ? `${translatePath}?q=${encodeURIComponent(query.trim())}`
+            : translatePath,
+        )
       } catch (error) {
         setSearchError(
           error instanceof Error
@@ -334,7 +427,7 @@ export function TranslateExperience({
         setSelectingAnilistId(null)
       }
     },
-    [],
+    [query, translatePath],
   )
 
   const loadCampaigns = useCallback(() => {
@@ -361,6 +454,7 @@ export function TranslateExperience({
         }
       })
       setEdition(item)
+      editionHistoryRef.current = item
       const requested = item.chapters.find(
         (chapter) => chapter.number === nextChapter,
       )
@@ -370,6 +464,8 @@ export function TranslateExperience({
       setRangeStartText(requested?.number ?? item.chapters[0]?.number ?? "")
       setRangeEndText(requested?.number ?? item.chapters.at(-1)?.number ?? "")
       setStep("chapters")
+      if (translateHistoryView(window.history.state) !== "chapters")
+        writeTranslateHistory("push", "chapters")
       setActionMessage("")
       try {
         localStorage.setItem(
@@ -462,6 +558,12 @@ export function TranslateExperience({
 
   const chooseEdition = useCallback(
     async (item: PublicSourceEdition, owner: PublicCatalogSeries) => {
+      if (item.accessStatus !== "available") {
+        setActionMessage(
+          "Bu bölüm kaynak üzerinde ücretli ve şuanlık ücretli hesap entegrasyonu sağlanamıyor.",
+        )
+        return
+      }
       if (item.chaptersLoaded) {
         applyEdition(item, owner)
         return
@@ -491,12 +593,27 @@ export function TranslateExperience({
 
   useEffect(() => {
     if (!series || step !== "source") return
-    const pendingSources = series.editions.filter(
+    const [availableSources, paidSources] = sourceEditionHydrationTiers(
+      series.editions,
+    )
+    const pendingAvailableSources = availableSources.filter(
       (source) =>
         !source.chaptersLoaded &&
         !hydratingSourceRequests.current.has(source.id) &&
         !sourceErrors[source.id],
     )
+    const availableSourceIsLoading = availableSources.some((source) =>
+      hydratingSourceRequests.current.has(source.id),
+    )
+    const pendingSources =
+      pendingAvailableSources.length > 0 || availableSourceIsLoading
+        ? pendingAvailableSources
+        : paidSources.filter(
+            (source) =>
+              !source.chaptersLoaded &&
+              !hydratingSourceRequests.current.has(source.id) &&
+              !sourceErrors[source.id],
+          )
     if (!pendingSources.length) return
     const frame = window.requestAnimationFrame(() => {
       for (const source of pendingSources)
@@ -510,8 +627,11 @@ export function TranslateExperience({
   useEffect(() => {
     if (!series || edition) return
     if (!detailMode) {
+      const availableSources = series.editions.filter(
+        (source) => source.accessStatus === "available",
+      )
       const onlySource =
-        series.editions.length === 1 ? series.editions[0] : null
+        availableSources.length === 1 ? availableSources[0] : null
       if (onlySource) void chooseEdition(onlySource, series)
       return
     }
@@ -525,9 +645,12 @@ export function TranslateExperience({
     } catch {
       // Ignore unavailable localStorage.
     }
+    const availableSources = series.editions.filter(
+      (item) => item.accessStatus === "available",
+    )
     const selected =
-      series.editions.find((item) => item.id === remembered) ??
-      [...series.editions].sort((left, right) => {
+      availableSources.find((item) => item.id === remembered) ??
+      [...availableSources].sort((left, right) => {
         const language =
           Number(right.sourceLanguage === "en") -
           Number(left.sourceLanguage === "en")
@@ -546,6 +669,7 @@ export function TranslateExperience({
   useEffect(() => {
     if (
       !edition ||
+      edition.accessStatus !== "available" ||
       selectedChapters.length === 0 ||
       !quality ||
       !outputLanguage
@@ -747,9 +871,13 @@ export function TranslateExperience({
         editions: PublicSourceEdition[]
       }
     >()
-    for (const source of series.editions) {
+    for (const source of orderSourceEditionsByAccess(series.editions)) {
       const existing = grouped.get(source.sourceLanguage)
-      if (existing) existing.editions.push(source)
+      if (existing)
+        existing.editions = orderSourceEditionsByAccess([
+          ...existing.editions,
+          source,
+        ])
       else
         grouped.set(source.sourceLanguage, {
           language: source.sourceLanguage,
@@ -768,6 +896,7 @@ export function TranslateExperience({
       : null
   const translationReady = Boolean(
     edition &&
+      edition.accessStatus === "available" &&
       selectedChapters.length > 0 &&
       quality &&
       outputLanguage &&
@@ -828,7 +957,7 @@ export function TranslateExperience({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Idempotency-Key": crypto.randomUUID(),
+        "Idempotency-Key": createClientIdempotencyKey(),
       },
       body: JSON.stringify({
         catalogSeriesId: series.id,
@@ -858,7 +987,7 @@ export function TranslateExperience({
         : (body.error ?? "İşlem tamamlanamadı."),
     )
     if (response.ok) {
-      router.push("/translate/serilerim")
+      router.push(translationRequestsPath)
     }
   }
 
@@ -908,7 +1037,7 @@ export function TranslateExperience({
       setAuthPromptOpen(true)
       return
     }
-    batchIdempotencyKey.current = crypto.randomUUID()
+    batchIdempotencyKey.current = createClientIdempotencyKey()
     setBatchConfirmationOpen(true)
   }
 
@@ -1000,13 +1129,25 @@ export function TranslateExperience({
     setStep("source")
     setActionMessage("")
     setSelectingAnilistId(null)
-    window.history.replaceState(
-      null,
-      "",
+    writeTranslateHistory(
+      "replace",
+      "search",
       query.trim()
-        ? `/translate?q=${encodeURIComponent(query.trim())}`
-        : "/translate",
+        ? `${translatePath}?q=${encodeURIComponent(query.trim())}`
+        : translatePath,
     )
+  }
+  const goBackWithinTranslate = (fallback: "search" | "source") => {
+    const currentView = translateHistoryView(window.history.state)
+    if (
+      (fallback === "search" && currentView === "source") ||
+      (fallback === "source" && currentView === "chapters")
+    ) {
+      window.history.back()
+      return
+    }
+    if (fallback === "search") returnToSearch()
+    else setStep("source")
   }
   return (
     <div className="grid min-w-0 max-w-full gap-8 overflow-x-clip">
@@ -1015,7 +1156,7 @@ export function TranslateExperience({
           {step === "source" && detailMode ? (
             <Link
               className="inline-flex min-h-11 items-center gap-2 text-base text-nv-muted-foreground hover:text-foreground"
-              href="/translate"
+              href={translatePath}
             >
               <ArrowLeft aria-hidden="true" size={19} />
               Aranan serilere dön
@@ -1023,7 +1164,7 @@ export function TranslateExperience({
           ) : step === "source" ? (
             <button
               className="inline-flex min-h-11 items-center gap-2 text-base text-nv-muted-foreground hover:text-foreground"
-              onClick={returnToSearch}
+              onClick={() => goBackWithinTranslate("search")}
               type="button"
             >
               <ArrowLeft aria-hidden="true" size={19} />
@@ -1032,7 +1173,7 @@ export function TranslateExperience({
           ) : (
             <button
               className="inline-flex min-h-11 items-center gap-2 text-base text-nv-muted-foreground hover:text-foreground"
-              onClick={() => setStep("source")}
+              onClick={() => goBackWithinTranslate("source")}
               type="button"
             >
               <ArrowLeft aria-hidden="true" size={19} />
@@ -1043,48 +1184,67 @@ export function TranslateExperience({
       ) : null}
       {!detailMode && !series ? (
         <form
-          action="/translate"
-          className="flex flex-col gap-3 sm:flex-row"
+          action={translatePath}
+          className="grid gap-3"
           onSubmit={(event) => {
             event.preventDefault()
             setActionMessage("")
             const normalized = query.trim()
             immediateSearchQuery.current = normalized
-            window.history.pushState(
-              null,
-              "",
+            writeTranslateHistory(
+              "push",
+              "search",
               normalized
-                ? `/translate?q=${encodeURIComponent(normalized)}`
-                : "/translate",
+                ? `${translatePath}?q=${encodeURIComponent(normalized)}`
+                : translatePath,
             )
             void runSearch(normalized)
           }}
         >
-          <label className="sr-only" htmlFor="translation-search">
-            Seri adı
-          </label>
-          <div className="relative flex-1">
-            <Search
-              aria-hidden="true"
-              className="-translate-y-1/2 absolute top-1/2 left-4 text-nv-muted-foreground"
-              size={19}
-            />
-            <input
-              className="h-13 w-full rounded-lg border border-nv-border bg-surface pr-4 pl-12 outline-none focus:border-nv-primary focus:ring-2 focus:ring-nv-primary/25"
-              id="translation-search"
-              maxLength={120}
-              name="q"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Seri adı veya alternatif adı"
-              value={query}
-            />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="sr-only" htmlFor="translation-search">
+              {locale === "tr" ? "Seri adı" : "Series title"}
+            </label>
+            <div className="relative flex-1">
+              <Search
+                aria-hidden="true"
+                className="-translate-y-1/2 absolute top-1/2 left-4 text-nv-muted-foreground"
+                size={19}
+              />
+              <input
+                className="h-13 w-full rounded-lg border border-nv-border bg-surface pr-4 pl-12 outline-none focus:border-nv-primary focus:ring-2 focus:ring-nv-primary/25"
+                id="translation-search"
+                maxLength={120}
+                name="q"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={
+                  locale === "tr"
+                    ? "Seri adı veya alternatif adı"
+                    : "Series title or alternative title"
+                }
+                value={query}
+              />
+            </div>
+            <button
+              className="h-13 rounded-lg bg-nv-primary px-7 font-semibold text-nv-primary-foreground hover:opacity-90"
+              type="submit"
+            >
+              {locale === "tr" ? "Ara" : "Search"}
+            </button>
           </div>
-          <button
-            className="h-13 rounded-lg bg-nv-primary px-7 font-semibold text-nv-primary-foreground hover:opacity-90"
-            type="submit"
-          >
-            Ara
-          </button>
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 justify-self-start text-sm">
+            <input
+              checked={onlyWithSources}
+              className="size-4 accent-nv-primary"
+              onChange={(event) => setOnlyWithSources(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              {locale === "tr"
+                ? "Yalnızca kaynağı bulunan serileri göster"
+                : "Only show series with available sources"}
+            </span>
+          </label>
         </form>
       ) : null}
 
@@ -1163,7 +1323,7 @@ export function TranslateExperience({
                 aria-disabled={selectingAnilistId !== null}
                 className="group grid min-w-0 cursor-pointer grid-cols-[76px_minmax(0,1fr)] gap-4 rounded-xl border border-nv-border bg-surface p-4 text-left hover:border-nv-primary hover:shadow-lg aria-disabled:cursor-wait aria-disabled:opacity-70 sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-5"
                 draggable={false}
-                href="/translate"
+                href={translatePath}
                 key={item.anilistId}
                 onClick={(event) => {
                   event.preventDefault()
@@ -1269,9 +1429,10 @@ export function TranslateExperience({
                 <h1 className="select-text font-bold text-3xl">
                   {series.title}
                 </h1>
-                <p className="mt-2 text-nv-muted-foreground">
-                  {series.description}
-                </p>
+                <SeriesDescriptionTranslator
+                  description={series.description}
+                  key={series.id}
+                />
               </div>
             </div>
             <AnimatePresence initial={false} mode="wait">
@@ -1299,13 +1460,25 @@ export function TranslateExperience({
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           {group.editions.map((source) => (
                             <div
-                              className="min-w-0 rounded-xl border border-nv-border bg-surface p-4 hover:border-nv-primary sm:p-5"
+                              className="relative min-w-0 rounded-xl border border-nv-border bg-surface p-4 has-disabled:opacity-70 has-focus-visible:outline-2 has-focus-visible:outline-ring has-enabled:hover:border-nv-primary sm:p-5"
                               key={source.id}
                             >
-                              <span className="flex min-w-0 items-center justify-between gap-3">
+                              <button
+                                aria-label={`${source.publicSourceLabel} kaynağını seç`}
+                                className="absolute inset-0 rounded-xl disabled:cursor-not-allowed"
+                                disabled={source.accessStatus !== "available"}
+                                onClick={() =>
+                                  void chooseEdition(source, series)
+                                }
+                                type="button"
+                              />
+                              <span className="pointer-events-none relative flex min-w-0 items-center justify-between gap-3">
                                 <span className="flex min-w-0 items-center gap-2 font-semibold">
                                   <button
-                                    className="truncate text-left hover:text-nv-primary"
+                                    className="pointer-events-auto truncate text-left enabled:hover:text-nv-primary disabled:cursor-not-allowed"
+                                    disabled={
+                                      source.accessStatus !== "available"
+                                    }
                                     onClick={() =>
                                       void chooseEdition(source, series)
                                     }
@@ -1313,10 +1486,12 @@ export function TranslateExperience({
                                   >
                                     {source.publicSourceLabel}
                                   </button>
-                                  <SourceInfoPopover
-                                    description={source.description}
-                                    label={source.publicSourceLabel}
-                                  />
+                                  <span className="pointer-events-auto">
+                                    <SourceInfoPopover
+                                      description={source.description}
+                                      label={source.publicSourceLabel}
+                                    />
+                                  </span>
                                 </span>
                                 {loadingSourceIds.has(source.id) ? (
                                   <LoaderCircle
@@ -1326,14 +1501,7 @@ export function TranslateExperience({
                                   />
                                 ) : null}
                               </span>
-                              <button
-                                aria-label={`${source.publicSourceLabel} kaynağını seç`}
-                                className="mt-3 block w-full text-left"
-                                onClick={() =>
-                                  void chooseEdition(source, series)
-                                }
-                                type="button"
-                              >
+                              <span className="pointer-events-none relative mt-3 block w-full text-left">
                                 <span className="grid grid-cols-2 gap-3 text-sm">
                                   <span className="rounded-lg bg-surface-raised p-3">
                                     <span className="block text-nv-muted-foreground text-xs">
@@ -1378,7 +1546,14 @@ export function TranslateExperience({
                                     için kaynağı seç.
                                   </span>
                                 ) : null}
-                              </button>
+                                {source.accessStatus ===
+                                "paid-account-required" ? (
+                                  <span className="mt-3 block text-nv-warning text-sm">
+                                    Bu bölüm kaynak üzerinde ücretli ve şuanlık
+                                    ücretli hesap entegrasyonu sağlanamıyor.
+                                  </span>
+                                ) : null}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -1393,7 +1568,7 @@ export function TranslateExperience({
                         Bu seri için indirilebilir kaynak talebinde{" "}
                         <Link
                           className="font-semibold text-nv-primary hover:underline"
-                          href="/translate/kaynak-talebi"
+                          href={`${translatePath}/kaynak-talebi`}
                         >
                           Buradan
                         </Link>{" "}
@@ -1418,6 +1593,12 @@ export function TranslateExperience({
                       açılacak. {edition.publicSourceLabel} ·{" "}
                       {edition.chapterCount} bölüm
                     </p>
+                    {edition.accessStatus === "paid-account-required" ? (
+                      <p className="mt-3 rounded-lg border border-nv-warning bg-nv-warning/10 p-3 text-nv-warning text-sm">
+                        Bu bölüm kaynak üzerinde ücretli ve şuanlık ücretli
+                        hesap entegrasyonu sağlanamıyor.
+                      </p>
+                    ) : null}
                   </div>
 
                   <fieldset className="min-w-0">
@@ -1628,7 +1809,8 @@ export function TranslateExperience({
                   </fieldset>
 
                   <AnimatePresence initial={false}>
-                    {selectedChapters.length ? (
+                    {selectedChapters.length &&
+                    edition.accessStatus === "available" ? (
                       <motion.div
                         animate={{ opacity: 1, y: 0 }}
                         initial={{ opacity: 0, y: -16 }}
@@ -1678,7 +1860,7 @@ export function TranslateExperience({
                   </AnimatePresence>
 
                   <AnimatePresence initial={false}>
-                    {quality ? (
+                    {quality && edition.accessStatus === "available" ? (
                       <motion.div
                         animate={{ opacity: 1, y: 0 }}
                         initial={{ opacity: 0, y: -16 }}
@@ -2380,7 +2562,7 @@ export function TranslateExperience({
               </button>
               <Link
                 className="rounded-lg bg-nv-primary px-4 py-3 text-center font-semibold text-nv-primary-foreground"
-                href="/translate/serilerim"
+                href={translationRequestsPath}
               >
                 Taleplerime git
               </Link>

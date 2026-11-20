@@ -1,0 +1,11 @@
+test_docker_permission_is_not_reported_as_stopped (__main__.LauncherTests.test_docker_permission_is_not_reported_as_stopped) ... ok
+test_local_node_with_sanitized_path (__main__.LauncherTests.test_local_node_with_sanitized_path) ... ok
+test_missing_health_runs_setup_then_dev (__main__.LauncherTests.test_missing_health_runs_setup_then_dev) ... ok
+test_stopped_docker_keeps_diagnostic (__main__.LauncherTests.test_stopped_docker_keeps_diagnostic) ... ok
+test_sudo_resolves_invoking_users_home (__main__.LauncherTests.test_sudo_resolves_invoking_users_home) ... ok
+test_unknown_sudo_user_has_useful_error (__main__.LauncherTests.test_unknown_sudo_user_has_useful_error) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.104s
+
+OK

@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { AuthPageTransition } from "../_components/auth-page-transition"
 import { MissingToken } from "./_components/missing-token"
 import { ResetPasswordForm } from "./_components/reset-password-form"
 
@@ -11,21 +12,20 @@ export default async function Page(props: Props) {
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-subtle p-4 md:gap-14 md:py-12 dark:bg-default">
-      <Link href="/" className="flex max-w-full items-center gap-2">
-        <Image
-          alt=""
-          className="size-14 shrink-0 rounded-xl object-cover sm:size-20"
-          height={80}
-          priority
-          src="/assets/brand/novora-brand-mark.svg"
-          width={80}
-        />
-        <h2 className="font-bold text-2xl tracking-tight sm:text-4xl">
-          NovoraScans
-        </h2>
-      </Link>
-      {searchParams.token && <ResetPasswordForm token={searchParams.token} />}
-      {!searchParams.token && <MissingToken />}
+      <AuthPageTransition>
+        <Link href="/" aria-label="NovoraScans ana sayfa">
+          <Image
+            alt="NovoraScans"
+            className="h-auto w-44 object-contain sm:w-56"
+            height={941}
+            priority
+            src="/assets/brand/novora-stacked-logo.png"
+            width={1672}
+          />
+        </Link>
+        {searchParams.token && <ResetPasswordForm token={searchParams.token} />}
+        {!searchParams.token && <MissingToken />}
+      </AuthPageTransition>
     </main>
   )
 }

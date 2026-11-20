@@ -2,7 +2,10 @@ import { db } from "@taiyomoe/db"
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { quoteTranslation } from "~/features/translation/pricing"
-import { getSourceCatalogProvider } from "~/features/translation/provider"
+import {
+  getSourceCatalogProvider,
+  paidSourceNotice,
+} from "~/features/translation/provider"
 import { rejectCrossOriginWrite } from "~/utils/api-security"
 
 const schema = z.object({
@@ -17,9 +20,14 @@ export async function POST(request: NextRequest) {
   const parsed = schema.safeParse(await request.json())
   if (!parsed.success)
     return NextResponse.json({ error: "Geçersiz seçim." }, { status: 400 })
-  const chapters = await getSourceCatalogProvider().listSourceChapters(
+  const edition = await getSourceCatalogProvider().getSourceEditionDetails(
     parsed.data.sourceEditionId,
   )
+  if (!edition)
+    return NextResponse.json({ error: "Kaynak bulunamadı." }, { status: 404 })
+  if (edition.accessStatus !== "available")
+    return NextResponse.json({ error: paidSourceNotice }, { status: 409 })
+  const chapters = edition.chapters
   const selected = parsed.data.chapterIds.map((id) =>
     chapters.find((chapter) => chapter.id === id),
   )

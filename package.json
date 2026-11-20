@@ -30,7 +30,8 @@
     "backup:verify": "node tooling/with-root-env.mjs node tooling/database-restore-check.mjs",
     "storage:migrate:r2": "node tooling/with-root-env.mjs pnpm --filter @taiyomoe/storage migrate:r2",
     "postinstall": "pnpm lint:ws",
-    "knip": "knip"
+    "knip": "knip",
+    "test:mandown-discovery": ".venv-mandown/bin/python -B tooling/test_mandown_discovery.py -v && node tooling/with-root-env.mjs pnpm --filter @taiyomoe/db exec tsx --test ../../apps/web/tests/mandown-discovery.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.7",

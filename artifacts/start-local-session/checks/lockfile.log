@@ -1,0 +1,11 @@
+Scope: all 23 workspace projects
+Done in 1.2s using pnpm v10.23.0
+
+   ╭───────────────────────────────────────────────╮
+   │                                               │
+   │     Update available! 10.23.0 → 12.10.1.      │
+   │     Changelog: https://pnpm.io/v/12.10.1      │
+   │   To update, run: corepack use pnpm@12.10.1   │
+   │                                               │
+   ╰───────────────────────────────────────────────╯
+

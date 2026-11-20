@@ -20,8 +20,10 @@ import { afterHook } from "./utils/after-hook"
 import { afterSessionCreatedHook } from "./utils/after-session-created-hook"
 import { beforeHook } from "./utils/before-hook"
 import { beforeUserCreatedHook } from "./utils/before-user-created-hook"
+import { logAuthApiError } from "./utils/log-auth-api-error"
 import { sendResetPassword } from "./utils/send-reset-password"
 import { sendVerificationEmail } from "./utils/send-verification-email"
+import { getTrustedOrigins } from "./utils/trusted-origins"
 
 const turnstileSecretKey =
   process.env.NODE_ENV !== "production" &&
@@ -31,7 +33,12 @@ const turnstileSecretKey =
 
 export const auth = betterAuth({
   appName: "NovoraScans",
-  trustedOrigins: [env.BETTER_AUTH_URL, ...env.BETTER_AUTH_TRUSTED_ORIGINS],
+  trustedOrigins: (request) =>
+    getTrustedOrigins(
+      request,
+      [env.BETTER_AUTH_URL, ...env.BETTER_AUTH_TRUSTED_ORIGINS],
+      process.env.NODE_ENV !== "production",
+    ),
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
@@ -47,6 +54,7 @@ export const auth = betterAuth({
     sendVerificationEmail,
   },
   account: { accountLinking: { enabled: false } },
+  onAPIError: { onError: logAuthApiError },
   user: {
     changeEmail: { enabled: true },
     additionalFields: {

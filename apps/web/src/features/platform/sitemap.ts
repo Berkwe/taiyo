@@ -37,12 +37,12 @@ export function sitemapIndexXml(paths: string[]) {
     .join("\n")}\n</sitemapindex>\n`
 }
 
-export const staticSitemapEntries = () => [
-  {
-    url: absoluteUrl(paths.translate()),
-    lastModified: "2026-07-25",
-  },
-  ...locales.flatMap((locale) => [
+export const staticSitemapEntries = () =>
+  locales.flatMap((locale) => [
+    {
+      url: absoluteUrl(paths.translate(locale)),
+      lastModified: "2026-07-28",
+    },
     {
       url: absoluteUrl(paths.home(locale)),
       lastModified: "2026-07-24",
@@ -59,8 +59,7 @@ export const staticSitemapEntries = () => [
       url: absoluteUrl(paths.genre(locale, slugify(genre))),
       lastModified: "2026-07-24",
     })),
-  ]),
-]
+  ])
 
 export const seriesSitemapEntries = async () =>
   (await getPublicSeries()).flatMap((series) =>

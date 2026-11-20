@@ -21,19 +21,21 @@ model CatalogSeries {
 }
 
 model CatalogSourceEdition {
-  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  catalogSeriesId   String         @db.Uuid
-  externalEditionId String
-  sourceUrl         String?
-  backendPlatform   SourcePlatform
-  sourceLanguage    Languages
-  publicSourceLabel String
-  publicDescription String
-  priority          Int            @default(0)
-  lastUpdatedAt     DateTime?
-  isActive          Boolean        @default(true)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  catalogSeriesId    String         @db.Uuid
+  externalEditionId  String
+  sourceUrl          String?
+  fallbackSourceUrls String[]       @default([])
+  backendPlatform    SourcePlatform
+  sourceLanguage     Languages
+  publicSourceLabel  String
+  publicDescription  String
+  priority           Int            @default(0)
+  lastUpdatedAt      DateTime?
+  isActive           Boolean        @default(true)
+  isPublic           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   catalogSeries CatalogSeries                 @relation(fields: [catalogSeriesId], references: [id], onDelete: Cascade)
   chapters      CatalogSourceChapter[]
@@ -52,6 +54,7 @@ model CatalogSourceChapter {
   title             String?
   publishedAt       DateTime?
   isAvailable       Boolean   @default(true)
+  isPublic          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

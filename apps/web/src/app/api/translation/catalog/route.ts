@@ -94,7 +94,11 @@ export async function GET(request: NextRequest) {
   )
   if (limited) return limited
   try {
-    const results = await getSourceCatalogProvider().searchSeries(query.data)
+    const results = await getSourceCatalogProvider().searchSeries(query.data, {
+      includeAdult: request.nextUrl.searchParams.get("includeAdult") === "1",
+      onlyWithSources:
+        request.nextUrl.searchParams.get("onlyWithSources") === "1",
+    })
     return NextResponse.json({ results })
   } catch (error) {
     return upstreamError(error, "Kaynak kataloğuna şu anda ulaşılamıyor.")

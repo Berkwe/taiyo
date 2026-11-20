@@ -1,0 +1,110 @@
+Scope: all 23 workspace projects
+Recreating /home/berkwe/Desktop/myProjects/NovoraScansSite/node_modules
+Lockfile is up to date, resolution step is skipped
+Packages: +1030
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 0, downloaded 1, added 0
+Progress: resolved 0, reused 0, downloaded 22, added 19
+ WARN  Tarball download average speed 22 KiB/s (size 24 KiB) is below 50 KiB/s: https://registry.npmjs.org/@t3-oss/env-core/-/env-core-0.13.11.tgz (GET)
+Progress: resolved 0, reused 0, downloaded 33, added 31
+Progress: resolved 0, reused 0, downloaded 37, added 34
+ WARN  Tarball download average speed 43 KiB/s (size 75 KiB) is below 50 KiB/s: https://registry.npmjs.org/@storybook/addon-onboarding/-/addon-onboarding-10.5.4.tgz (GET)
+Progress: resolved 0, reused 0, downloaded 49, added 46
+Progress: resolved 0, reused 0, downloaded 57, added 54
+Progress: resolved 0, reused 0, downloaded 70, added 64
+ WARN  Tarball download average speed 6 KiB/s (size 24 KiB) is below 50 KiB/s: https://registry.npmjs.org/@vitest/expect/-/expect-4.1.10.tgz (GET)
+Progress: resolved 0, reused 0, downloaded 83, added 75
+Progress: resolved 0, reused 0, downloaded 95, added 87
+Progress: resolved 0, reused 0, downloaded 106, added 98
+Progress: resolved 0, reused 0, downloaded 120, added 109
+Progress: resolved 0, reused 0, downloaded 130, added 120
+Progress: resolved 0, reused 0, downloaded 135, added 129
+Progress: resolved 0, reused 0, downloaded 152, added 148
+Progress: resolved 0, reused 0, downloaded 169, added 166
+Progress: resolved 0, reused 0, downloaded 190, added 186
+Progress: resolved 0, reused 0, downloaded 209, added 207
+Progress: resolved 0, reused 0, downloaded 220, added 219
+ WARN  Tarball download average speed 43 KiB/s (size 741 KiB) is below 50 KiB/s: https://registry.npmjs.org/zod/-/zod-4.4.3.tgz (GET)
+Progress: resolved 0, reused 0, downloaded 228, added 229
+Progress: resolved 0, reused 0, downloaded 239, added 240
+Progress: resolved 0, reused 0, downloaded 249, added 250
+Progress: resolved 0, reused 0, downloaded 266, added 269
+Progress: resolved 0, reused 0, downloaded 280, added 283
+Progress: resolved 0, reused 0, downloaded 291, added 293
+Progress: resolved 0, reused 0, downloaded 306, added 308
+Progress: resolved 0, reused 0, downloaded 321, added 324
+Progress: resolved 0, reused 0, downloaded 336, added 337
+Progress: resolved 0, reused 0, downloaded 370, added 369
+Progress: resolved 0, reused 0, downloaded 385, added 385
+Progress: resolved 0, reused 0, downloaded 398, added 398
+Progress: resolved 0, reused 0, downloaded 413, added 413
+Progress: resolved 0, reused 0, downloaded 429, added 428
+Progress: resolved 0, reused 0, downloaded 445, added 446
+Progress: resolved 0, reused 0, downloaded 455, added 455
+Progress: resolved 0, reused 0, downloaded 460, added 464
+Progress: resolved 0, reused 0, downloaded 482, added 486
+Progress: resolved 0, reused 0, downloaded 504, added 508
+Progress: resolved 0, reused 0, downloaded 520, added 524
+Progress: resolved 0, reused 0, downloaded 526, added 530
+Progress: resolved 0, reused 0, downloaded 532, added 536
+Progress: resolved 0, reused 0, downloaded 555, added 558
+Progress: resolved 0, reused 0, downloaded 559, added 563
+Progress: resolved 0, reused 0, downloaded 569, added 573
+Progress: resolved 0, reused 0, downloaded 579, added 583
+Progress: resolved 0, reused 0, downloaded 594, added 598
+Progress: resolved 0, reused 0, downloaded 621, added 625
+Progress: resolved 0, reused 0, downloaded 660, added 669
+Progress: resolved 0, reused 0, downloaded 679, added 688
+Progress: resolved 0, reused 0, downloaded 691, added 699
+Progress: resolved 0, reused 0, downloaded 704, added 713
+Progress: resolved 0, reused 0, downloaded 737, added 747
+Progress: resolved 0, reused 0, downloaded 801, added 818
+Progress: resolved 0, reused 0, downloaded 835, added 853
+Progress: resolved 0, reused 0, downloaded 882, added 904
+Progress: resolved 0, reused 0, downloaded 925, added 950
+Progress: resolved 0, reused 0, downloaded 940, added 968
+Progress: resolved 0, reused 0, downloaded 956, added 984
+Progress: resolved 0, reused 0, downloaded 987, added 1016
+Progress: resolved 0, reused 0, downloaded 989, added 1020
+Progress: resolved 0, reused 0, downloaded 990, added 1020
+Progress: resolved 0, reused 0, downloaded 990, added 1021
+Progress: resolved 0, reused 0, downloaded 991, added 1021
+Progress: resolved 0, reused 0, downloaded 992, added 1023
+Progress: resolved 0, reused 0, downloaded 993, added 1025
+Progress: resolved 0, reused 0, downloaded 994, added 1025
+Progress: resolved 0, reused 0, downloaded 994, added 1026
+Progress: resolved 0, reused 0, downloaded 995, added 1026
+Progress: resolved 0, reused 0, downloaded 995, added 1027
+Progress: resolved 0, reused 0, downloaded 996, added 1027
+Progress: resolved 0, reused 0, downloaded 996, added 1028
+Progress: resolved 0, reused 0, downloaded 997, added 1028
+Progress: resolved 0, reused 0, downloaded 997, added 1029
+Progress: resolved 0, reused 0, downloaded 997, added 1030, done
+
+devDependencies:
++ @types/global-types 0.1.0 <- packages/global-types
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @parcel/watcher, @prisma/engines, @swc/core,        │
+│   @tsparticles/engine, core-js, esbuild, msgpackr-extract, prisma,           │
+│   prisma-zod-generator.                                                      │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+. postinstall$ pnpm lint:ws
+. postinstall: > taiyo@ lint:ws /home/berkwe/Desktop/myProjects/NovoraScansSite
+. postinstall: > pnpm dlx sherif@latest
+. postinstall: Progress: resolved 1, reused 0, downloaded 0, added 0
+. postinstall: Packages: +3
+. postinstall: +++
+. postinstall: Progress: resolved 9, reused 3, downloaded 0, added 3, done
+. postinstall: 1 issue found in ./:
+. postinstall:  ⚠️ warning All packages matching the workspace should have a package.json file. packages-without-package-json
+. postinstall:    ./tooling/__pycache__/package.json doesn't exist.
+. postinstall: 1 issue found (0 ⨯, 1 ⚠️, 0 ✓) across 22 packages in 1.823035ms.
+. postinstall:  Note: use `-i` to ignore dependencies, `-r` to ignore rules, `-p` to ignore packages, and `-f` to autofix fixable issues.
+. postinstall: Done
+Done in 1m 31.6s using pnpm v10.23.0

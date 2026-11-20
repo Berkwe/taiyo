@@ -12,6 +12,7 @@ declare global {
       showLibrary?: boolean
       homeLayout?: HomeLayout
       translationLanguage?: Languages
+      showAdultAniListResults?: boolean
     }
     type MediaChapterPage = { id: string }
     type MediaCommentAttachement = { id: string; extension: "png" | "gif" }

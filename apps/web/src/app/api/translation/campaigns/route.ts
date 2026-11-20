@@ -16,7 +16,10 @@ import {
   quoteTranslation,
   translationConfig,
 } from "~/features/translation/pricing"
-import { getSourceCatalogProvider } from "~/features/translation/provider"
+import {
+  loadPublicCatalogSelection,
+  paidSourceNotice,
+} from "~/features/translation/provider"
 import type {
   PublicCatalogSeries,
   PublicSourceEdition,
@@ -464,7 +467,7 @@ export async function GET() {
         sourceLanguage: edition?.sourceLanguage.toLowerCase(),
         continuationChapterNumber: continuationChapter?.chapterNumber,
         continuationHref: continuationChapter
-          ? `/translate/${campaign.catalogSeriesId}?sourceEditionId=${campaign.sourceEditionId}&quality=${qualityTier}&outputLanguage=${outputLanguage}&nextChapter=${encodeURIComponent(
+          ? `/${outputLanguage}/translate/${campaign.catalogSeriesId}?sourceEditionId=${campaign.sourceEditionId}&quality=${qualityTier}&outputLanguage=${outputLanguage}&nextChapter=${encodeURIComponent(
               continuationChapter.chapterNumber,
             )}&selectionMode=range&fromContinuation=1`
           : undefined,
@@ -514,13 +517,15 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     )
 
-  const provider = getSourceCatalogProvider()
-  const series = await provider.getSeriesDetails(parsed.data.catalogSeriesId)
-  const edition = series?.editions.find(
-    (item) => item.id === parsed.data.sourceEditionId,
+  const selection = await loadPublicCatalogSelection(
+    parsed.data.catalogSeriesId,
+    parsed.data.sourceEditionId,
   )
-  if (!series || !edition)
+  if (!selection)
     return NextResponse.json({ error: "Kaynak bulunamadı." }, { status: 404 })
+  const { series, edition } = selection
+  if (edition.accessStatus !== "available")
+    return NextResponse.json({ error: paidSourceNotice }, { status: 409 })
   const selected = parsed.data.chapterIds.map((id) =>
     edition.chapters.find((chapter) => chapter.id === id),
   )
@@ -759,7 +764,7 @@ export async function POST(request: NextRequest) {
                 type: "TRANSLATION_CAMPAIGN",
                 title: "Çeviri fonlandı",
                 message: `${series.title} çeviri talebi kuyruğa alındı.`,
-                href: "/translate/serilerim",
+                href: "/tr/translate/serilerim",
                 dedupeKey: `translation-funded:${updated.id}:${user.id}`,
               },
               update: {},

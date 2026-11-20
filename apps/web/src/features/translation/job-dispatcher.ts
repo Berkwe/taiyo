@@ -2,6 +2,11 @@ import { createHash, randomUUID } from "node:crypto"
 import path from "node:path"
 import { db, type Languages, type Prisma } from "@taiyomoe/db"
 import { mandownDownload } from "./mandown-bridge"
+import {
+  firstAvailableSourceDetails,
+  isPaidSourceUrl,
+  paidSourceNotice,
+} from "./provider"
 import type { TranslationQuality } from "./types"
 
 export type MandownBackendPlatform = "NAVER" | "WEBTOONS" | "OTHER"
@@ -67,9 +72,14 @@ export async function runMandownTranslationDownload(
 ) {
   const edition = await db.catalogSourceEdition.findUnique({
     where: { id: payload.sourceEditionId, isActive: true },
-    select: { sourceUrl: true },
+    select: { fallbackSourceUrls: true, sourceUrl: true },
   })
   if (!edition?.sourceUrl) throw new Error("Mandown kaynak URL’si bulunamadı.")
+  if (isPaidSourceUrl(edition.sourceUrl)) throw new Error(paidSourceNotice)
+  const source = await firstAvailableSourceDetails([
+    edition.sourceUrl,
+    ...edition.fallbackSourceUrls,
+  ])
   const chapters = await db.catalogSourceChapter.findMany({
     where: {
       sourceEditionId: payload.sourceEditionId,
@@ -88,12 +98,13 @@ export async function runMandownTranslationDownload(
     .update(payload.idempotencyKey)
     .digest("hex")
     .slice(0, 24)
-  return mandownDownload({
-    url: edition.sourceUrl,
+  const download = await mandownDownload({
+    url: source.url,
     chapterNumbers: chapters.map((chapter) => chapter.chapterNumber),
     destination: path.join(downloadRoot, folder),
     downloadRoot,
   })
+  return { ...download, sourceUrl: source.url }
 }
 
 export function getTranslationJobDispatcher(): TranslationJobDispatcher {

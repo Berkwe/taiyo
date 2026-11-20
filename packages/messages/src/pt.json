@@ -138,6 +138,33 @@
       "description1": "Por favor, verifique sua caixa de entrada para um link de verificação.",
       "description2": "Nós acabamos de enviar um email de verificação para você, ou você já teve um enviado para você nas últimas horas. Se você não recebeu nada, por favor, aguarde mais uma hora e tente novamente."
     },
+    "verificationResult": {
+      "success": {
+        "title": "Seu email foi verificado",
+        "description": "Sua conta está pronta. Você já está conectado ao NovoraScans.",
+        "redirect": "Você será redirecionado para o início em {seconds} segundos."
+      },
+      "errors": {
+        "expired": {
+          "title": "O link de verificação expirou",
+          "description": "Este link não pode mais ser usado. Entre na sua conta para solicitar um novo email de verificação."
+        },
+        "invalid": {
+          "title": "O link de verificação é inválido",
+          "description": "O link pode estar incompleto, alterado ou já ter sido usado. Solicite um novo email na página de login."
+        },
+        "notFound": {
+          "title": "Nenhuma conta foi encontrada",
+          "description": "Nenhuma conta corresponde a este link. Verifique seu email e cadastre-se novamente."
+        },
+        "unknown": {
+          "title": "Não foi possível verificar seu email",
+          "description": "Ocorreu um erro inesperado. Solicite um novo email de verificação na página de login."
+        }
+      },
+      "home": "Ir para o início",
+      "signIn": "Ir para o login"
+    },
     "resetPasswordEmailSent": {
       "title": "Email de redefinição de senha enviado",
       "description1": "Por favor, verifique sua caixa de entrada para um link de redefinição de senha.",

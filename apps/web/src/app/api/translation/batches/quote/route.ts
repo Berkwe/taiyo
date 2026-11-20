@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { currentActiveUser } from "~/features/reading/server"
 import { evaluateBatchEligibility } from "~/features/translation/batch-instant"
-import { getSourceCatalogProvider } from "~/features/translation/provider"
+import {
+  loadPublicCatalogSelection,
+  paidSourceNotice,
+} from "~/features/translation/provider"
 import { rejectCrossOriginWrite } from "~/utils/api-security"
 
 const schema = z
@@ -25,14 +28,15 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     )
 
-  const series = await getSourceCatalogProvider().getSeriesDetails(
+  const selection = await loadPublicCatalogSelection(
     parsed.data.catalogSeriesId,
+    parsed.data.sourceEditionId,
   )
-  const edition = series?.editions.find(
-    (item) => item.id === parsed.data.sourceEditionId,
-  )
-  if (!series || !edition)
+  if (!selection)
     return NextResponse.json({ error: "Kaynak bulunamadı." }, { status: 404 })
+  const { series, edition } = selection
+  if (edition.accessStatus !== "available")
+    return NextResponse.json({ error: paidSourceNotice }, { status: 409 })
 
   const [quote, user] = await Promise.all([
     db.$transaction((tx) =>

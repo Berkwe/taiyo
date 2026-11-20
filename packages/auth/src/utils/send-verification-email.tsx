@@ -2,6 +2,7 @@ import { db } from "@taiyomoe/db"
 import type { User } from "better-auth"
 import React from "react"
 import { deliverAuthEmail } from "./email-delivery"
+import { getVerificationEmailUrl } from "./verification-email-url"
 
 void React
 
@@ -13,13 +14,19 @@ export const sendVerificationEmail = async (
   },
   request?: Request,
 ) => {
+  const verificationUrl = getVerificationEmailUrl(
+    data.url,
+    request,
+    process.env.NODE_ENV !== "production",
+  )
+
   try {
     await deliverAuthEmail(async () => {
       const { SignUpEmail, sendEmail } = await import("@taiyomoe/email")
       return sendEmail({
         to: data.user.email,
         subject: "NovoraScans e-posta doğrulama",
-        react: <SignUpEmail name={data.user.name} url={data.url} />,
+        react: <SignUpEmail name={data.user.name} url={verificationUrl} />,
       })
     })
   } catch (error) {

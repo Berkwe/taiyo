@@ -1,0 +1,147 @@
+Changed fields: copy-only PATH and PROJECT_DIR; original start-local.sh unchanged.
+Original SHA256: 069b4f9be433dee0c3cb27a7ce1fc761d414bf5864fcf158771e5cb2ad1483b1
+BASELINE command: PATH=/usr/bin:/bin /bin/bash start-local.sh
+Input: no stdin
+Output:
+NovoraScans yerel ortamı hazırlanıyor…
+Hata: 'node' bulunamadı.
+
+Exit status: 1
+MODIFIED command: PATH=/usr/bin:/bin /bin/bash artifacts/start-local-session/MODIFIED_FILE.sh
+Input: no stdin
+Output:
+NovoraScans yerel ortamı hazırlanıyor…
+Hata: Docker çalışmıyor. Docker'ı açıp tekrar deneyin.
+
+Exit status: 1
+ROLLBACK command: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/ROLLBACK.sh /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/rollback-test.sh
+Input: modified copy
+Output: ''
+Exit status: 0
+Restored hash matches original: True
+Restored command: PATH=/usr/bin:/bin /bin/bash /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/rollback-test.sh
+Output:
+NovoraScans yerel ortamı hazırlanıyor…
+Hata: 'node' bulunamadı.
+
+Exit status: 1
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/MODIFIED_FILE.sh
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/DIFF_FILE.patch
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/VERIFICATION.txt
+/home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/ROLLBACK.sh
+
+format command: pnpm exec biome format apps/ packages/ tooling/
+Exit status: 0
+Log: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/checks/format.log
+
+lint command: pnpm check:ws
+Exit status: 0
+Log: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/checks/lint.log
+
+Install command: pnpm install --frozen-lockfile
+Exit status: 1
+
+typecheck command: pnpm typecheck
+Exit status: 0
+Log: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/checks/typecheck.log
+
+tests command: pnpm test:auth
+Exit status: 0
+Log: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/checks/tests.log
+
+Lockfile validation command: pnpm install --lockfile-only --frozen-lockfile --ignore-scripts
+Exit status: 0
+
+build command: pnpm build
+Exit status: 1
+Log: /home/berkwe/Desktop/myProjects/NovoraScansSite/artifacts/start-local-session/checks/build.log
+
+Install command: CI=true pnpm install --frozen-lockfile
+Exit status: 0
+
+Final start command: bash start-local.sh
+Exit status: 1
+
+Final format command: pnpm exec biome format apps/ packages/ tooling/
+Exit status: 0
+
+Final lint command: pnpm check:ws
+Exit status: 0
+
+Final typecheck command: pnpm typecheck
+Exit status: 0
+
+Final tests command: pnpm test:auth
+Exit status: 0
+
+Final build command: pnpm build
+Exit status: 1
+
+Installed: Node v24.11.1, npm 11.6.2, pnpm 10.23.0.
+Docker diagnostic: permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+
+start.log literal output:
+NovoraScans yerel ortamı hazırlanıyor…
+Hata: Docker çalışmıyor. Docker'ı açıp tekrar deneyin.
+
+build-final.log literal output:
+
+> taiyo@ build /home/berkwe/Desktop/myProjects/NovoraScansSite
+> node tooling/with-root-env.mjs turbo build
+
+• turbo 2.10.7
+
+   • Packages in scope: @taiyomoe/auth, @taiyomoe/cache, @taiyomoe/config, @taiyomoe/db, @taiyomoe/email, @taiyomoe/github, @taiyomoe/io-worker, @taiyomoe/logs, @taiyomoe/meilisearch, @taiyomoe/messages, @taiyomoe/messaging, @taiyomoe/s3, @taiyomoe/schemas, @taiyomoe/storage, @taiyomoe/storybook, @taiyomoe/trpc, @taiyomoe/types, @taiyomoe/typescript, @taiyomoe/ui, @taiyomoe/utils, @taiyomoe/web, @types/global-types
+   • Running build in 22 packages
+   • Remote caching disabled
+
+@taiyomoe/storybook:build: cache miss, executing 2abf1ca0864c0310
+@taiyomoe/web:build: cache miss, executing a48ddcd1c164e71d
+@taiyomoe/storybook:build: 
+@taiyomoe/storybook:build: > @taiyomoe/storybook@1.0.0 build /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/storybook
+@taiyomoe/storybook:build: > storybook build
+@taiyomoe/storybook:build: 
+@taiyomoe/web:build: 
+@taiyomoe/web:build: > @taiyomoe/web@2.0.0 build /home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web
+@taiyomoe/web:build: > pnpm -F @taiyomoe/db run db migrate deploy && pnpm -F @taiyomoe/logs run migrate && next build
+@taiyomoe/web:build: 
+@taiyomoe/web:build: 
+@taiyomoe/web:build: > @taiyomoe/db@0.1.0 db /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db
+@taiyomoe/web:build: > node ../../tooling/with-root-env.mjs prisma migrate deploy
+@taiyomoe/web:build: 
+@taiyomoe/storybook:build: 
+@taiyomoe/storybook:build: ┌  Building storybook v10.5.4
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Cleaning outputDir: storybook-static
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Loading presets
+@taiyomoe/web:build: Loaded Prisma config from prisma.config.ts.
+@taiyomoe/web:build: 
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ◇  Building manager..
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ●  Building open services..
+@taiyomoe/storybook:build: │
+@taiyomoe/storybook:build: ●  Building preview..
+@taiyomoe/storybook:build: │  Vite vite v7.3.6 building client environment for production...
+@taiyomoe/web:build: Prisma schema loaded from src/prisma.
+@taiyomoe/web:build: Datasource "db": PostgreSQL database "taiyo", schema "public" at "localhost:5432"
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Error: P1001: Can't reach database server at `localhost:5432`
+@taiyomoe/web:build: 
+@taiyomoe/web:build: Please make sure your database server is running at `localhost:5432`.
+@taiyomoe/web:build: /home/berkwe/Desktop/myProjects/NovoraScansSite/packages/db:
+@taiyomoe/web:build:  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @taiyomoe/db@0.1.0 db: `node ../../tooling/with-root-env.mjs prisma migrate deploy`
+@taiyomoe/web:build: Exit status 1
+@taiyomoe/storybook:build: │  Vite transforming...
+@taiyomoe/web:build:  ELIFECYCLE  Command failed with exit code 1.
+@taiyomoe/storybook:build:  ELIFECYCLE  Command failed.
+@taiyomoe/web#build:  ERROR  command (/home/berkwe/Desktop/myProjects/NovoraScansSite/apps/web) /home/berkwe/.local/bin/pnpm run build exited (1)
+
+ Tasks:    0 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    6.574s 
+Failed:    @taiyomoe/web#build
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.
